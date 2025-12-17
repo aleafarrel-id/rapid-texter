@@ -79,6 +79,22 @@ void Terminal::setColor(Color color) {
     std::cout << "\033[" << code << "m";
 }
 
+void Terminal::setBackgroundColor(Color color) {
+    int code = 49; // Default background
+    switch (color) {
+        case Color::RED: code = 41; break;
+        case Color::GREEN: code = 42; break;
+        case Color::YELLOW: code = 43; break;
+        case Color::BLUE: code = 44; break;
+        case Color::MAGENTA: code = 45; break;
+        case Color::CYAN: code = 46; break;
+        case Color::WHITE: code = 47; break;
+        case Color::BLACK: code = 40; break;
+        default: code = 49; break;
+    }
+    std::cout << "\033[" << code << "m";
+}
+
 void Terminal::resetColor() {
     std::cout << "\033[0m";
 }

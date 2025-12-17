@@ -88,7 +88,11 @@ void GameEngine::drawStatusBar() {
     int y = h - 2; // Bottom area
     
     std::string lang = currentLanguage.empty() ? "N/A" : (currentLanguage == "id" ? "ID" : (currentLanguage == "en" ? "EN" : "PROG"));
-    std::string time = (selectedDuration == 0) ? "30s" : std::to_string(selectedDuration) + "s";
+    std::string time;
+    if (selectedDuration == -1) time = "Inf";
+    else if (selectedDuration == 0) time = "30s";
+    else time = std::to_string(selectedDuration) + "s";
+
     std::string mode = currentMode.empty() ? "N/A" : (currentMode == "manual" ? "Manual" : "Campaign");
     if (currentLanguage == "prog") mode = "Programmer";
     
@@ -97,7 +101,14 @@ void GameEngine::drawStatusBar() {
     // Draw background bar? Or just centered text
     // User asked for "Lang : ID | Time : 60s | Mode : Campaign" at bottom center.
     
+    // Draw background bar
+    terminal.setBackgroundColor(Color::BLUE);
+    for(int i=0; i<w; ++i) {
+        terminal.setCursor(i, y);
+        terminal.print(" ");
+    }
     printCentered(y, status, Color::WHITE);
+    terminal.resetColor();
 }
 
 // Helper for input string
@@ -184,15 +195,17 @@ void GameEngine::handleMenuDuration() {
     int cy = h / 2;
     int cx = w / 2;
 
-    int boxW = 40;
-    int boxH = 12;
+    int boxW = 50;
+    int boxH = 14; // Increased height
     drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::MAGENTA);
 
-    printCentered(cy - 4, "SELECT DURATION", Color::MAGENTA);
-    printCentered(cy - 1, "[1] 15 Seconds");
-    printCentered(cy, "[2] 30 Seconds");
-    printCentered(cy + 1, "[3] 60 Seconds");
-    printCentered(cy + 3, "(B) Back", Color::YELLOW);
+    printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
+    printCentered(cy - 2, "[1] 15 Seconds");
+    printCentered(cy - 1, "[2] 30 Seconds");
+    printCentered(cy, "[3] 60 Seconds");
+    printCentered(cy + 1, "[4] Custom");
+    printCentered(cy + 2, "[5] Tanpa Waktu");
+    printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
     drawStatusBar();
 
@@ -203,6 +216,26 @@ void GameEngine::handleMenuDuration() {
             if (c == '1') { selectedDuration = 15; currentState = GameState::MENU_MODE; return; }
             if (c == '2') { selectedDuration = 30; currentState = GameState::MENU_MODE; return; }
             if (c == '3') { selectedDuration = 60; currentState = GameState::MENU_MODE; return; }
+            if (c == '4') {
+                // Custom input
+                terminal.clear();
+                drawBox(cx - 30, cy - 5, 60, 10, Color::MAGENTA);
+                printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
+                std::string inp = getStringInput(true);
+                if (inp.empty()) return; // Back to this menu logic? actually returns to loop
+                try {
+                    int val = std::stoi(inp);
+                    if (val > 0) {
+                        selectedDuration = val;
+                        currentState = GameState::MENU_MODE;
+                        return;
+                    }
+                } catch (...) {}
+                // If invalid, just redraw
+                handleMenuDuration();
+                return;
+            }
+            if (c == '5') { selectedDuration = -1; currentState = GameState::MENU_MODE; return; }
         }
     }
 }
@@ -214,7 +247,7 @@ void GameEngine::handleMenuMode() {
     int cy = h / 2;
     int cx = w / 2;
 
-    int boxW = 40;
+    int boxW = 50;
     int boxH = 12;
     drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::GREEN);
 
@@ -228,7 +261,7 @@ void GameEngine::handleMenuMode() {
     while(true) {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 'b') { currentState = GameState::MENU_LANGUAGE; return; }
+            if (c == 'b') { currentState = GameState::MENU_DURATION; return; }
             if (c == '1') { currentMode = "manual"; currentState = GameState::MENU_DIFFICULTY; return; }
             if (c == '2') { currentMode = "campaign"; currentState = GameState::MENU_DIFFICULTY; return; }
         }
@@ -341,7 +374,21 @@ void GameEngine::renderGame() {
     int cx = w / 2;
     
     // Header Info
-    std::string info = " MODE: " + currentMode + " | TIME: " + std::to_string(timeLimitSeconds) + "   ";
+    // Header Info
+    std::string timeStr;
+    if (selectedDuration == -1) {
+        if (isGameStarted) {
+             auto now = std::chrono::steady_clock::now();
+             int elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
+             timeStr = std::to_string(elapsed) + "s";
+        } else {
+             timeStr = "Inf";
+        }
+    } else {
+        timeStr = std::to_string(timeLimitSeconds);
+    }
+
+    std::string info = " MODE: " + currentMode + " | TIME: " + timeStr + "   ";
     // Using absolute pos to avoid newlines
     terminal.setCursor(cx - info.length()/2, 2);
     terminal.resetColor();
@@ -434,12 +481,18 @@ void GameEngine::gameLoop() {
         if (isGameStarted) {
             auto now = std::chrono::steady_clock::now();
             int elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-            int remaining = selectedDuration - elapsed;
-            timeLimitSeconds = remaining;
+            
+            if (selectedDuration != -1) {
+                int remaining = selectedDuration - elapsed;
+                timeLimitSeconds = remaining;
 
-            if (remaining <= 0) {
-                currentState = GameState::RESULTS;
-                return;
+                if (remaining <= 0) {
+                    currentState = GameState::RESULTS;
+                    return;
+                }
+            } else {
+                // Infinite mode, just track time for display if needed
+                timeLimitSeconds = elapsed; 
             }
         }
 
@@ -510,7 +563,7 @@ void GameEngine::showResults() {
     if (isGameStarted) {
         auto now = std::chrono::steady_clock::now();
         seconds = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() / 1000.0;
-        if (seconds > selectedDuration) seconds = selectedDuration;
+        if (selectedDuration != -1 && seconds > selectedDuration) seconds = selectedDuration;
     }
     
     currentStats.timeTaken = seconds;

@@ -26,6 +26,7 @@ public:
     void clear();
     void setCursor(int x, int y);
     void setColor(Color color);
+    void setBackgroundColor(Color color);
     void resetColor();
     void beep();
     
