@@ -2,7 +2,7 @@
 
 ![Language](https://img.shields.io/badge/language-C++-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)
 
 **Rapid Texter** adalah aplikasi tes kecepatan mengetik berbasis terminal (Command Line Interface) yang ringan dan cepat. Dibangun menggunakan C++, aplikasi ini dirancang untuk membantu pengguna melatih kecepatan (WPM) dan akurasi mengetik dalam berbagai mode bahasa, termasuk Bahasa Indonesia, Inggris, dan sintaks Pemrograman.
 
