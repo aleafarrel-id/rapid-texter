@@ -1,7 +1,8 @@
 #include "GameEngine.h"
 #include <iostream>
 #include <sstream>
-#include <thread>
+#include <thread>      // Cross-platform sleep
+#include <chrono>      // Cross-platform time
 #include <iomanip>
 #include <cmath>
 
@@ -85,7 +86,7 @@ void GameEngine::printCentered(int y, std::string text, Color color) {
 void GameEngine::drawStatusBar() {
     int w = terminal.getWidth();
     int h = terminal.getHeight();
-    int y = h - 2; // Bottom area
+    int y = h - 2;
     
     std::string lang = currentLanguage.empty() ? "N/A" : (currentLanguage == "id" ? "ID" : (currentLanguage == "en" ? "EN" : "PROG"));
     std::string time;
@@ -98,10 +99,6 @@ void GameEngine::drawStatusBar() {
     
     std::string status = " Lang: " + lang + " | Time: " + time + " | Mode: " + mode + " ";
     
-    // Draw background bar? Or just centered text
-    // User asked for "Lang : ID | Time : 60s | Mode : Campaign" at bottom center.
-    
-    // Draw background bar
     terminal.setBackgroundColor(Color::BLUE);
     for(int i=0; i<w; ++i) {
         terminal.setCursor(i, y);
@@ -111,7 +108,6 @@ void GameEngine::drawStatusBar() {
     terminal.resetColor();
 }
 
-// Helper for input string
 std::string GameEngine::getStringInput(bool digitsOnly) {
     std::string inputBuf = "";
     int startX = terminal.getWidth() / 2 - 10;
@@ -123,17 +119,17 @@ std::string GameEngine::getStringInput(bool digitsOnly) {
     while(true) {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 27) return ""; // ESC
-            if (c == 10 || c == 13) return inputBuf; // ENTER
+            if (c == 27) { terminal.hideCursor(); return ""; }
+            if (c == 10 || c == 13) { terminal.hideCursor(); return inputBuf; }
             
-            if (c == 127 || c == '\b') {
+            if (c == 127 || c == '\b' || c == 8) { // Backspace (8 for Windows)
                 if (!inputBuf.empty()) {
                     inputBuf.pop_back();
                     terminal.setCursor(startX + inputBuf.length(), startY);
-                    terminal.print(" "); // Erase char on screen
+                    terminal.print(" ");
                     terminal.setCursor(startX + inputBuf.length(), startY);
                 }
-            } else if (!digitsOnly || isdigit(c)) {
+            } else if (!digitsOnly || (c >= '0' && c <= '9')) {
                 if (c >= 32 && c <= 126 && inputBuf.length() < 20) {
                      inputBuf += c;
                      terminal.print(std::string(1, c));
@@ -141,8 +137,6 @@ std::string GameEngine::getStringInput(bool digitsOnly) {
             }
         }
     }
-    terminal.hideCursor();
-    return inputBuf; // Should not reach here
 }
 
 // === HANDLERS ===
@@ -154,14 +148,12 @@ void GameEngine::handleMenuLanguage() {
     int cy = h / 2;
     int cx = w / 2;
 
-    // ASCII Art Title
     std::string title1 = " ____  _  _  ____  ____  ____ ";
     std::string title2 = "(  _ \\/ )( \\(  _ \\(_  _)(    \\";
     std::string title3 = " )   /) __ ( ) __/ _)(_  ) D (";
     std::string title4 = "(__\\_)\\_)(_/(__)  (____)(____/";
     std::string subtitle = "RAPID TEXTER";
 
-    // Draw main frame
     int boxW = 50;
     int boxH = 14;
     drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::CYAN);
@@ -181,7 +173,7 @@ void GameEngine::handleMenuLanguage() {
     while(true) {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 'q') { currentState = GameState::EXIT; return; }
+            if (c == 'q' || c == 'Q') { currentState = GameState::EXIT; return; }
             if (c == '1') { currentLanguage = "id"; currentState = GameState::MENU_DURATION; return; }
             if (c == '2') { currentLanguage = "en"; currentState = GameState::MENU_DURATION; return; }
         }
@@ -196,7 +188,7 @@ void GameEngine::handleMenuDuration() {
     int cx = w / 2;
 
     int boxW = 50;
-    int boxH = 14; // Increased height
+    int boxH = 14;
     drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::MAGENTA);
 
     printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
@@ -212,17 +204,16 @@ void GameEngine::handleMenuDuration() {
     while(true) {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 'b') { currentState = GameState::MENU_LANGUAGE; return; }
+            if (c == 'b' || c == 'B') { currentState = GameState::MENU_LANGUAGE; return; }
             if (c == '1') { selectedDuration = 15; currentState = GameState::MENU_MODE; return; }
             if (c == '2') { selectedDuration = 30; currentState = GameState::MENU_MODE; return; }
             if (c == '3') { selectedDuration = 60; currentState = GameState::MENU_MODE; return; }
             if (c == '4') {
-                // Custom input
                 terminal.clear();
                 drawBox(cx - 30, cy - 5, 60, 10, Color::MAGENTA);
                 printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
                 std::string inp = getStringInput(true);
-                if (inp.empty()) return; // Back to this menu logic? actually returns to loop
+                if (inp.empty()) { handleMenuDuration(); return; }
                 try {
                     int val = std::stoi(inp);
                     if (val > 0) {
@@ -231,7 +222,6 @@ void GameEngine::handleMenuDuration() {
                         return;
                     }
                 } catch (...) {}
-                // If invalid, just redraw
                 handleMenuDuration();
                 return;
             }
@@ -261,7 +251,7 @@ void GameEngine::handleMenuMode() {
     while(true) {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 'b') { currentState = GameState::MENU_DURATION; return; }
+            if (c == 'b' || c == 'B') { currentState = GameState::MENU_DURATION; return; }
             if (c == '1') { currentMode = "manual"; currentState = GameState::MENU_DIFFICULTY; return; }
             if (c == '2') { currentMode = "campaign"; currentState = GameState::MENU_DIFFICULTY; return; }
         }
@@ -286,14 +276,10 @@ void GameEngine::handleMenuDifficulty() {
         
         drawStatusBar();
 
-        // Use helper for input
         std::string inputBuf = getStringInput(true);
         
         if (inputBuf.empty()) {
-             currentState = GameState::MENU_MODE; // Back if empty/esc (handled by empty check usually, but check ESC in helper returns empty)
-             // Actually helper returns "" on ESC.
-             // But if user just hits ENTER on empty? It returns "".
-             // So we go back on ESC or empty enter. OK.
+             currentState = GameState::MENU_MODE;
              return;
         }
 
@@ -333,7 +319,7 @@ void GameEngine::handleMenuDifficulty() {
         while(true) {
              if (terminal.hasInput()) {
                 char d = terminal.getInput();
-                if (d == 'b') { currentState = GameState::MENU_MODE; return; }
+                if (d == 'b' || d == 'B') { currentState = GameState::MENU_MODE; return; }
                 
                 bool valid = false;
                 if (d == '1' && unlockedDifficulties[Difficulty::EASY]) { currentDifficulty = Difficulty::EASY; valid = true; }
@@ -373,8 +359,6 @@ void GameEngine::renderGame() {
     int cy = h / 2;
     int cx = w / 2;
     
-    // Header Info
-    // Header Info
     std::string timeStr;
     if (selectedDuration == -1) {
         if (isGameStarted) {
@@ -389,12 +373,10 @@ void GameEngine::renderGame() {
     }
 
     std::string info = " MODE: " + currentMode + " | TIME: " + timeStr + "   ";
-    // Using absolute pos to avoid newlines
     terminal.setCursor(cx - info.length()/2, 2);
     terminal.resetColor();
     terminal.print(info);
 
-    // Footer Help
     std::string footer = "TAB: Restart | ESC: Exit";
     terminal.setCursor(cx - (footer.length()/2), h - 2);
     terminal.setColor(Color::YELLOW);
@@ -425,23 +407,9 @@ void GameEngine::renderGame() {
                 color = Color::GREEN; 
             } else {
                 color = Color::RED; 
-                // Fix: Spacebar error visibility
-                // If expected is space, but typed something else, draw the typed char in RED.
                 if (targetChar == ' ') {
-                    charToDraw = typedChar; // Show what they typed wrong
-                    // if they typed space correctly it hits the if above.
-                    // if they typed space INCORRECTLY (not possible usually unless map logic, wait)
-                    // If target is ' ' and typed is 'a', it goes here.
-                    // If target is 'a' and typed is ' ', it goes here.
-                    // We want to force visibility. 
-                    if (charToDraw == ' ') charToDraw = '_'; // Visible error for space?
-                    // User said: "saat spasi ya yang bisa hanya spasi, huruf lain akan dianggap salah"
-                    // And "why if not space pressed it feels like space".
-                    // That implies we swallowed the char and moved on.
-                    // Here we draw `charToDraw` which was `targetChar`. 
-                    // So we were drawing ' ' (invisible) in RED.
-                    // Let's draw the WRONG char effectively?
-                    // "huruf lain akan dianggap salah" -> Show it in red.
+                    charToDraw = typedChar;
+                    if (charToDraw == ' ') charToDraw = '_';
                 }
             }
         }
@@ -449,7 +417,6 @@ void GameEngine::renderGame() {
         terminal.setColor(color);
         terminal.printAt(curX, curY, std::string(1, charToDraw));
 
-        // Draw Caret
         terminal.setCursor(curX, curY + 1);
         if ((int)i == cursorPosition) {
             terminal.setColor(Color::YELLOW);
@@ -462,14 +429,12 @@ void GameEngine::renderGame() {
     }
     terminal.resetColor();
     
-    // waiting indicator
     if (!isGameStarted) {
         printCentered(cy + 6, "Type to start...", Color::WHITE);
     } else {
          printCentered(cy + 6, "                 ", Color::WHITE); 
     }
     
-    // Move cursor out of way?
     terminal.hideCursor(); 
 }
 
@@ -491,7 +456,6 @@ void GameEngine::gameLoop() {
                     return;
                 }
             } else {
-                // Infinite mode, just track time for display if needed
                 timeLimitSeconds = elapsed; 
             }
         }
@@ -508,16 +472,16 @@ void GameEngine::gameLoop() {
 }
 
 void GameEngine::processInput(char c) {
-    if (c == 27) { // ESC
+    if (c == 27) {
         currentState = GameState::MENU_DIFFICULTY; 
         return;
     }
-    if (c == 9) { // TAB
+    if (c == 9) {
         resetSession();
         return;
     }
     
-    if (c == 127 || c == '\b') { // Backspace
+    if (c == 127 || c == '\b' || c == 8) { // Backspace (8 for Windows)
         if (cursorPosition > 0) {
             cursorPosition--;
             typedString.pop_back();
@@ -531,21 +495,13 @@ void GameEngine::processInput(char c) {
         if (cursorPosition < (int)flatTargetString.length()) {
             char targetChar = flatTargetString[cursorPosition];
             
-            // STRICT SPACEBAR LOGIC
-            // "saat spasi ya yang bisa hanya spasi, huruf lain akan dianggap salah"
-            // "Kenapa kalau bukan spasi yang dipencet tetap rasanya seperti pencet spasi"
-            // Means if target is space, ONLY allow space? Or count as error?
-            // "Huruf lain dianggap salah" -> It count as error. 
-            // My previous code did count as error, but visually it showed ' ' (red).
-            // I fixed the visual in renderGame.
-             
             typedString += c;
             
             if (targetChar == c) {
                 currentStats.correctKeystrokes++;
             } else {
                 currentStats.errors++;
-                terminal.beep(); // Sound feedback
+                terminal.beep();
             }
             currentStats.totalKeystrokes++;
             cursorPosition++;
@@ -557,7 +513,6 @@ void GameEngine::processInput(char c) {
     }
 }
 
-// Update showResults logic
 void GameEngine::showResults() {
     double seconds = 0;
     if (isGameStarted) {
@@ -640,7 +595,6 @@ void GameEngine::showResults() {
                 msg = "Level Failed.";
         }
     } else if (currentMode == "manual") {
-        // Clear result for Manual
         if (currentStats.wpm >= targetWPM) {
             msg = "TARGET REACHED!";
             msgColor = Color::GREEN;
