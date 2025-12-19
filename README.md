@@ -1,83 +1,80 @@
-Rapid Texter
+<div align="center">
 
-Rapid Texter adalah aplikasi tes kecepatan mengetik berbasis terminal (CLI) yang sederhana namun *powerful*, ditulis menggunakan C++. Aplikasi ini dirancang untuk membantu Anda mengukur dan meningkatkan kecepatan mengetik (WPM) serta akurasi Anda dalam berbagai mode bahasa.
+# 🚀 Rapid Texter
 
-## 🚀 Fitur Utama
+![C++](https://img.shields.io/badge/C++-17-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-- **Cross-Platform:** Sekarang mendukung penuh **Windows** dan **Linux**.
-- **Mode Beragam:**
-  - Bahasa Indonesia
-  - Bahasa Inggris
-  - Mode Programmer (Sintaks kode)
-- **Statistik Real-time:** Menampilkan WPM (*Words Per Minute*), Waktu dan Akurasi.
-- **Ringan:** Berjalan langsung di terminal tanpa dependensi GUI yang berat.
+**Uji kecepatan jari dan ketepatan pikiran Anda langsung dari Terminal.** Rapid Texter adalah aplikasi *Touch Typing* berbasis CLI yang ringan, cepat, dan estetis.
 
-## 🛠️ Prasyarat
+[Fitur](#-fitur-utama) • [Instalasi](#-cara-compile--jalankan) • [Kontribusi](#-kontribusi)
 
-Sebelum melakukan kompilasi, pastikan sistem Anda memiliki:
+</div>
 
-1.  **C++ Compiler** versi cukup baru yang mendukung standar modern (misal: GCC, Clang, MinGW atau MSVC).
-2.  **CMake** (Versi 3.10 atau lebih baru).
+---
 
-## 🏗️ Cara Build (Kompilasi)
+## ⚡ Fitur Utama
 
-Proyek ini sekarang menggunakan **CMake** untuk memastikan kompatibilitas di berbagai sistem operasi.
+* **🌐 Multi-Bahasa:** Tersedia mode Bahasa Indonesia & Bahasa Inggris.
+* **💻 Mode Programmer:** Latih pengetikan simbol dan sintaks koding (`#include`, `std::vector`, dll).
+* **📊 Statistik Real-time:** Pantau WPM (*Words Per Minute*), Akurasi, dan Waktu secara langsung.
+* **🎨 Cross-Platform:** Tampilan cantik yang konsisten di **Windows** (CMD/PowerShell) dan **Linux**.
+* **🚀 Ringan:** Tanpa GUI berat, berjalan instan di terminal apa saja.
 
-### Linux / macOS
+## 🛠️ Cara Compile & Jalankan
 
-1.  Buka terminal dan navigasikan ke direktori proyek.
-2.  Buat folder build dan masuk ke dalamnya:
-    ```bash
-    mkdir build
-    cd build
-    ```
-3.  Jalankan CMake dan compile:
-    ```bash
-    cmake ..
-    make
-    ```
-4.  Jalankan aplikasi:
-    ```bash
-    ./rapid-texter
-    ```
+Kami telah menyederhanakan proses instalasi. Anda tidak perlu repot membuat folder build secara manual. Hasil compile akan langsung muncul di folder ini.
 
-### Windows
+### Prasyarat
+Pastikan Anda sudah menginstall:
+1.  **C++ Compiler** (GCC, Clang, atau MSVC).
+2.  **CMake** (Install saat menginstall Visual Studio atau via `sudo apt install cmake` di Linux).
 
-1.  Buka Command Prompt (CMD) atau PowerShell di direktori proyek.
-2.  Buat direktori build:
-    ```cmd
-    mkdir build
-    cd build
-    ```
-3.  Generate file project menggunakan CMake:
-    ```cmd
-    cmake ..
-    ```
-4.  Build aplikasi (Mode Release disarankan):
-    ```cmd
-    cmake --build . --config Release
-    ```
-5.  Aplikasi yang sudah jadi biasanya berada di folder `Release` atau `Debug` di dalam folder `build`.
-    ```cmd
-    .\\Release\\rapid-texter.exe
-    ```
+### Langkah Cepat (Windows & Linux)
 
-> **Catatan:** Jika Anda menggunakan Visual Studio atau VS Code, Anda juga bisa langsung membuka folder proyek ini dan membiarkan IDE mendeteksi `CMakeLists.txt` secara otomatis.
+Buka terminal di folder project ini, lalu jalankan **dua perintah** berikut:
 
-## 📂 Struktur File Data
+```bash
+# 1. Siapkan konfigurasi (cukup sekali)
+cmake CMakeLists.txt
 
+# 2. Compile program
+cmake --build .
 ```
+
+### Cara Memulai Aplikasi
+
+Setelah proses di atas selesai, jalankan file yang muncul di folder ini:
+
+**🪟 Windows:**
+```cmd
+rapid_texter.exe
+```
+
+**🐧 Linux / macOS:**
+```bash
+./rapid_texter
+```
+
+> **Catatan:** Pastikan folder `assets/` berada di lokasi yang sama dengan aplikasi (seharusnya sudah otomatis tersedia).
+
+## 📂 Struktur Project
+
+```text
 rapid-texter/
+├── assets/         # Database kata (ID, EN, Code)
 ├── include/        # Header files (.h)
-├── src/            # Source files (.cpp)
-├── assets/         # Text files (en.txt, id.txt, prog.txt)
-└── README.md       # Documentation
+├── src/            # Source code (.cpp)
+├── CMakeLists.txt  # Konfigurasi Build
+└── rapid_texter    # (Akan muncul setelah compile)
 ```
-
-Aplikasi ini membutuhkan file teks sumber (`id.txt`, `en.txt`, `prog.txt`) untuk bekerja.
-- Pastikan Anda menjalankan program dari direktori root proyek, **ATAU**
-- Salin file `.txt` tersebut ke folder yang sama dengan file executable (`.exe` atau binary) jika program tidak dapat menemukan file teks.
 
 ## 📜 Lisensi
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE). Silakan lihat file LICENSE untuk informasi lebih lanjut.
+Project ini dilisensikan di bawah **MIT License**. Bebas untuk digunakan, dimodifikasi, dan didistribusikan.
+
+---
+<div align="center">
+  Developed 2025 by Alea Farrel.
+</div>
