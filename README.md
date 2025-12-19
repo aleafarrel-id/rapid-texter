@@ -28,8 +28,10 @@ Kami telah menyederhanakan proses instalasi. Anda tidak perlu repot membuat fold
 
 ### Prasyarat
 Pastikan Anda sudah menginstall:
-1.  **C++ Compiler** (GCC, Clang, atau MSVC).
+1.  **C++ Compiler** terbaru (GCC, Clang, MinGW atau MSVC).
 2.  **CMake** (Install saat menginstall Visual Studio atau via `sudo apt install cmake` di Linux).
+
+> **Catatan:** Project bisa langsung dibuka di Visual Studio dan akan mendeteksi file CMakeLists.txt.
 
 ### Langkah Cepat (Windows & Linux)
 
