@@ -17,15 +17,15 @@ file(GLOB SOURCES "src/*.cpp")
 add_executable(rapid_texter ${SOURCES})
 
 # --- BAGIAN PENTING: Manajemen Aset ---
-# Skrip di bawah ini otomatis menyalin file .txt (id.txt, en.txt, dll)
-# dari folder source ke folder build tempat file .exe berada.
-# Ini mencegah error "File not found" saat program dijalankan.
-file(GLOB TEXT_ASSETS "*.txt")
-foreach(asset ${TEXT_ASSETS})
-    add_custom_command(TARGET rapid_texter POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${asset}
-        $<TARGET_FILE_DIR:rapid_texter>
-        COMMENT "Menyalin aset teks ${asset} ke folder output..."
-    )
-endforeach()
+# perintah ini akan menyalin SELURUH folder 'assets' dari source code
+# ke dalam folder build tempat executable berada.
+#
+# Hasilnya nanti di folder build akan ada folder: .../build/assets/id.txt, dll.
+# Ini sesuai dengan path baru di C++: "assets/id.txt"
+
+add_custom_command(TARGET rapid_texter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets
+    $<TARGET_FILE_DIR:rapid_texter>/assets
+    COMMENT "Menyalin folder assets ke direktori output..."
+)

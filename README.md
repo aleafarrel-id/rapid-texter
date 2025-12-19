@@ -1,102 +1,83 @@
-# 🚀 Rapid Texter
+Rapid Texter
 
-**Rapid Texter** is a lightweight, terminal-based typing speed test game built with C++. Test your typing skills in multiple languages and programming syntax directly from your console.
+Rapid Texter adalah aplikasi tes kecepatan mengetik berbasis terminal (CLI) yang sederhana namun *powerful*, ditulis menggunakan C++. Aplikasi ini dirancang untuk membantu Anda mengukur dan meningkatkan kecepatan mengetik (WPM) serta akurasi Anda dalam berbagai mode bahasa.
 
-## ✨ Features
+## 🚀 Fitur Utama
 
-- 📝 **Multiple Modes**: English, Indonesian, and Programming Syntax.
-- ⏱️ **Real-time Stats**: Tracks Words Per Minute (WPM) and Accuracy.
-- 💻 **Cross-Platform**: Runs on Windows and Linux.
-- 🪶 **Lightweight**: Zero dependencies, just pure C++.
+- **Cross-Platform:** Sekarang mendukung penuh **Windows** dan **Linux**.
+- **Mode Beragam:**
+  - Bahasa Indonesia
+  - Bahasa Inggris
+  - Mode Programmer (Sintaks kode)
+- **Statistik Real-time:** Menampilkan WPM (*Words Per Minute*), Waktu dan Akurasi.
+- **Ringan:** Berjalan langsung di terminal tanpa dependensi GUI yang berat.
 
----
+## 🛠️ Prasyarat
 
-## ⚙️ Prerequisites
+Sebelum melakukan kompilasi, pastikan sistem Anda memiliki:
 
-You need a C++ compiler to build this project.
+1.  **C++ Compiler** versi cukup baru yang mendukung standar modern (misal: GCC, Clang, MinGW atau MSVC).
+2.  **CMake** (Versi 3.10 atau lebih baru).
 
-### 🪟 Windows (MinGW-w64)
-We recommend using the **MinGW-w64** build by Brecht Sanders (as tested with version 15.2.0).
+## 🏗️ Cara Build (Kompilasi)
 
-1.  **Download**: Visit [WinLibs.com](https://winlibs.com/) and download the latest **GCC/G++ (UCRT)** version.
-2.  **Install**: Extract the downloaded zip file to a location (e.g., `C:\\MinGW`).
-3.  **Path**: Add the `bin` folder (e.g., `C:\\MinGW\\bin`) to your Windows **Environment Variables (PATH)**.
-4.  **Verify**: Open PowerShell/CMD and type:
-    ```powershell
-    g++ --version
+Proyek ini sekarang menggunakan **CMake** untuk memastikan kompatibilitas di berbagai sistem operasi.
+
+### Linux / macOS
+
+1.  Buka terminal dan navigasikan ke direktori proyek.
+2.  Buat folder build dan masuk ke dalamnya:
+    ```bash
+    mkdir build
+    cd build
     ```
-
-### 🐧 Linux (Debian/Ubuntu)
-You need to install the `build-essential` package which includes GCC/G++ and Make.
-
-```bash
-sudo apt update && sudo apt install build-essential
-```
-
----
-
-## 🛠️ Build & Compile
-
-Clone the repository and navigate to the project folder.
-
-### On Windows
-We have provided batch scripts for easy management.
-
-**1. Compile:**
-Double-click `compile_windows.bat` or run in terminal:
-```powershell
-.\\compile_windows.bat
-```
-
-**2. Clean (Optional):**
-To remove compiled object files and the executable:
-```powershell
-.\\clean_windows.bat
-```
-
-### On Linux
-Use the included `Makefile` for automated building.
-
-**1. Compile:**
-```bash
-make
-```
-
-**2. Clean:**
-```bash
-make clean
-```
-
----
-
-## 🎮 How to Run
-
-After compiling, an executable file will be created in the main directory.
-
-* **Windows**:
-    ```powershell
-    .\\rapid-texter.exe
+3.  Jalankan CMake dan compile:
+    ```bash
+    cmake ..
+    make
     ```
-
-* **Linux**:
+4.  Jalankan aplikasi:
     ```bash
     ./rapid-texter
     ```
 
----
+### Windows
 
-## 📂 Project Structure
+1.  Buka Command Prompt (CMD) atau PowerShell di direktori proyek.
+2.  Buat direktori build:
+    ```cmd
+    mkdir build
+    cd build
+    ```
+3.  Generate file project menggunakan CMake:
+    ```cmd
+    cmake ..
+    ```
+4.  Build aplikasi (Mode Release disarankan):
+    ```cmd
+    cmake --build . --config Release
+    ```
+5.  Aplikasi yang sudah jadi biasanya berada di folder `Release` atau `Debug` di dalam folder `build`.
+    ```cmd
+    .\\Release\\rapid-texter.exe
+    ```
+
+> **Catatan:** Jika Anda menggunakan Visual Studio atau VS Code, Anda juga bisa langsung membuka folder proyek ini dan membiarkan IDE mendeteksi `CMakeLists.txt` secara otomatis.
+
+## 📂 Struktur File Data
 
 ```
 rapid-texter/
 ├── include/        # Header files (.h)
 ├── src/            # Source files (.cpp)
 ├── assets/         # Text files (en.txt, id.txt, prog.txt)
-├── Makefile        # Linux build script
-├── *.bat           # Windows build scripts
 └── README.md       # Documentation
 ```
 
-## 📜 License
+Aplikasi ini membutuhkan file teks sumber (`id.txt`, `en.txt`, `prog.txt`) untuk bekerja.
+- Pastikan Anda menjalankan program dari direktori root proyek, **ATAU**
+- Salin file `.txt` tersebut ke folder yang sama dengan file executable (`.exe` atau binary) jika program tidak dapat menemukan file teks.
 
-This project is open source. Feel free to contribute!
+## 📜 Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE). Silakan lihat file LICENSE untuk informasi lebih lanjut.

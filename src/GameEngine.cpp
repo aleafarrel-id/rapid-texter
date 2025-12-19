@@ -18,9 +18,9 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE) {
     unlockedDifficulties[Difficulty::PROGRAMMER] = true; // Mode bonus (selalu terbuka)
     
     // Memuat kata-kata dari file eksternal ke dalam memori
-    textProvider.loadWords("id", "id.txt");
-    textProvider.loadWords("en", "en.txt");
-    textProvider.loadWords("prog", "prog.txt");
+    textProvider.loadWords("id", "assets/id.txt");
+    textProvider.loadWords("en", "assets/en.txt");
+    textProvider.loadWords("prog", "assets/prog.txt");
     
     selectedDuration = 30; // Durasi default 30 detik
 }
