@@ -5,29 +5,29 @@
 #include <vector>
 #include <map>
 
+// Tingkat kesulitan yang tersedia
 enum class Difficulty {
-    EASY,
-    MEDIUM,
-    HARD,
-    PROGRAMMER
+    EASY,       // Kata pendek
+    MEDIUM,     // Kata sedang
+    HARD,       // Kata panjang
+    PROGRAMMER  // Kode/Sintaks (tanpa filter panjang)
 };
 
 class TextProvider {
 public:
     TextProvider();
     
-    // Load words from a file into a specific language bank
+    // Memuat kata dari file teks (misal: "id.txt") ke dalam memori
     bool loadWords(const std::string& language, const std::string& filename);
     
-    // Get a random set of words based on language and difficulty
-    // count: number of words to return
+    // Mendapatkan daftar kata acak sesuai kriteria
     std::vector<std::string> getWords(const std::string& language, Difficulty difficulty, int count);
 
 private:
-    // Language -> Word List
+    // Penyimpanan kata: Map[Kode Bahasa] -> List Kata
     std::map<std::string, std::vector<std::string>> wordBanks;
     
-    // Helper to filter words based on difficulty criteria
+    // Validasi apakah kata cocok untuk kesulitan tertentu
     bool isWordValidForDifficulty(const std::string& word, Difficulty difficulty);
 };
 

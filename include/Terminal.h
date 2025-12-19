@@ -3,7 +3,7 @@
 
 #include <string>
 
-// ===== ENUM COLOR DIPINDAHKAN KE SINI AGAR ACCESSIBLE =====
+// Enum warna untuk abstraksi kode warna ANSI
 enum class Color {
     DEFAULT,
     RED,
@@ -16,20 +16,22 @@ enum class Color {
     BLACK
 };
 
+// Kelas Wrapper untuk menangani interaksi konsol lintas platform (Windows/Linux)
 class Terminal {
 public:
     Terminal();
     ~Terminal();
 
     void initialize();
-    void cleanup();
+    void cleanup(); // Mengembalikan terminal ke mode normal
 
+    // Fungsi menggambar/rendering
     void clear();
     void setCursor(int x, int y);
     void setColor(Color color);
     void setBackgroundColor(Color color);
     void resetColor();
-    void beep();
+    void beep(); // Bunyi sistem
     
     void print(const std::string& text);
     void printAt(int x, int y, const std::string& text);
@@ -37,22 +39,25 @@ public:
     void hideCursor();
     void showCursor();
 
-    bool hasInput();
-    char getInput();
+    // Fungsi Input
+    bool hasInput(); // Cek apakah ada tombol ditekan (non-blocking)
+    char getInput(); // Baca tombol
     
+    // Mode Raw (tanpa buffer enter, tanpa echo)
     void enableRawMode();
     void disableRawMode();
 
+    // Info layar
     int getWidth();
     int getHeight();
 
 private:
 #ifdef _WIN32
-    void* hStdin;   // HANDLE untuk stdin
-    void* hStdout;  // HANDLE untuk stdout
+    void* hStdin;   // Windows Handle untuk stdin
+    void* hStdout;  // Windows Handle untuk stdout
     unsigned long originalMode;
 #else
-    // Linux: akan disimpan di .cpp
+    // Linux menggunakan struct termios yang didefinisikan di .cpp
 #endif
 };
 

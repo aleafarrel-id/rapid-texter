@@ -1,6 +1,7 @@
 #ifndef STATS_H
 #define STATS_H
 
+// Struktur data sederhana untuk menyimpan statistik permainan
 struct Stats {
     double wpm = 0.0;
     double accuracy = 0.0;
@@ -9,12 +10,10 @@ struct Stats {
     int correctKeystrokes = 0;
     int errors = 0;
     
+    // Menghitung WPM dan Akurasi berdasarkan data yang ada
     void calculate(int totalMappedChars) {
-        // WPM calculation: (all typed / 5) / time_in_minutes
-        // Standard definition often uses correct ones, or all.
-        // Usually (Total Characters / 5) / (Time / 60) -> Net WPM deducts errors.
-        // User asked for "Kecepatan dalam WPM". I will use standard Gross/Net.
-        // Let's go with (Correct / 5) / (Time / 60) for accuracy focused WPM.
+        // Rumus WPM: (Jumlah Karakter Benar / 5) / (Waktu dalam Menit)
+        // Angka 5 adalah standar rata-rata panjang kata dalam mengetik.
         
         double minutes = timeTaken / 60.0;
         if (minutes > 0) {
@@ -23,6 +22,7 @@ struct Stats {
             wpm = 0;
         }
         
+        // Akurasi: Persentase huruf benar dibanding total tombol ditekan
         if (totalKeystrokes > 0) {
             accuracy = (static_cast<double>(correctKeystrokes) / totalKeystrokes) * 100.0;
         } else {
@@ -30,6 +30,7 @@ struct Stats {
         }
     }
     
+    // Reset statistik ke 0
     void reset() {
         wpm = 0;
         accuracy = 0;
