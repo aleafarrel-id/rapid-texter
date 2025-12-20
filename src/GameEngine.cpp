@@ -41,6 +41,7 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE) {
     textProvider.loadWords("prog", "assets/prog.txt");
     
     selectedDuration = 30; // Default: 30 detik
+    originalLanguage = "";  // Akan diset saat user memilih bahasa
 }
 
 // ============================================================================
@@ -290,11 +291,13 @@ void GameEngine::handleMenuLanguage() {
             }
             if (c == '1') { 
                 currentLanguage = "id"; 
+                originalLanguage = "id"; // Simpan bahasa asli
                 currentState = GameState::MENU_DURATION; 
                 return; 
             }
             if (c == '2') { 
                 currentLanguage = "en"; 
+                originalLanguage = "en"; // Simpan bahasa asli
                 currentState = GameState::MENU_DURATION; 
                 return; 
             }
@@ -622,8 +625,6 @@ void GameEngine::handleMenuDifficulty() {
             }
 
             if (valid) {
-                if (currentDifficulty == Difficulty::PROGRAMMER) 
-                    currentLanguage = "prog";
                 currentState = GameState::PLAYING;
                 resetSession();
                 return;
@@ -662,7 +663,10 @@ void GameEngine::resetSession() {
 }
 
 /**
- * @brief Render tampilan saat game berlangsung
+ * @brief Render tampilan saat game berlangsung dengan word-aware wrapping
+ * 
+ * Menggunakan word-aware wrapping yang tidak memotong kata di tengah.
+ * Algoritma: Render per-kata, cek apakah kata muat di baris saat ini sebelum render.
  * 
  * Menampilkan kata-kata dengan highlight warna:
  * - Putih: Belum diketik
@@ -710,47 +714,89 @@ void GameEngine::renderGame() {
 
     int curX = startX;
     int curY = startY;
+    int globalCharIndex = 0; // Track posisi global di flatTargetString
     
-    // Render setiap karakter dengan warna
-    for (size_t i = 0; i < flatTargetString.length(); ++i) {
-        // Word wrap
-        if (curX >= startX + boxWidth) {
+    // Render per-kata untuk mencegah kata terpotong
+    for (size_t wordIdx = 0; wordIdx < targetWords.size(); ++wordIdx) {
+        const std::string& word = targetWords[wordIdx];
+        int wordLength = word.length();
+        
+        // Cek apakah kata muat di baris saat ini
+        // Jika tidak muat dan bukan di awal baris, pindah ke baris baru
+        if (curX + wordLength > startX + boxWidth && curX > startX) {
             curX = startX;
             curY += 2;
         }
-
-        char targetChar = flatTargetString[i];
-        char charToDraw = targetChar;
-        Color color = Color::WHITE; 
-
-        // Tentukan warna berdasarkan status ketikan
-        if (i < typedString.length()) {
-            char typedChar = typedString[i];
-            if (typedChar == targetChar) {
-                color = Color::GREEN; // Benar
-            } else {
-                color = Color::RED;   // Salah
-                if (targetChar == ' ') {
-                    charToDraw = typedChar;
-                    if (charToDraw == ' ') charToDraw = '_';
+        
+        // Render setiap karakter dalam kata
+        for (int charIdx = 0; charIdx < wordLength; ++charIdx) {
+            char targetChar = word[charIdx];
+            char charToDraw = targetChar;
+            Color color = Color::WHITE;
+            
+            // Tentukan warna berdasarkan status ketikan
+            if (globalCharIndex < (int)typedString.length()) {
+                char typedChar = typedString[globalCharIndex];
+                if (typedChar == targetChar) {
+                    color = Color::GREEN; // Benar
+                } else {
+                    color = Color::RED;   // Salah
+                    if (targetChar == ' ') {
+                        charToDraw = typedChar;
+                        if (charToDraw == ' ') charToDraw = '_';
+                    }
                 }
             }
+            
+            terminal.setColor(color);
+            terminal.printAt(curX, curY, std::string(1, charToDraw));
+            
+            // Indikator posisi kursor (^)
+            terminal.setCursor(curX, curY + 1);
+            if (globalCharIndex == cursorPosition) {
+                terminal.setColor(Color::YELLOW);
+                terminal.print("^");
+            } else {
+                terminal.print(" ");
+            }
+            
+            curX++;
+            globalCharIndex++;
         }
-
-        terminal.setColor(color);
-        terminal.printAt(curX, curY, std::string(1, charToDraw));
-
-        // Indikator posisi kursor (^)
-        terminal.setCursor(curX, curY + 1);
-        if ((int)i == cursorPosition) {
-            terminal.setColor(Color::YELLOW);
-            terminal.print("^");
-        } else {
-            terminal.print(" ");
+        
+        // Tambahkan spasi antar kata (kecuali kata terakhir)
+        if (wordIdx < targetWords.size() - 1) {
+            char spaceChar = ' ';
+            Color spaceColor = Color::WHITE;
+            
+            // Cek status spasi
+            if (globalCharIndex < (int)typedString.length()) {
+                char typedChar = typedString[globalCharIndex];
+                if (typedChar == ' ') {
+                    spaceColor = Color::GREEN;
+                } else {
+                    spaceColor = Color::RED;
+                    spaceChar = typedChar;
+                }
+            }
+            
+            terminal.setColor(spaceColor);
+            terminal.printAt(curX, curY, std::string(1, spaceChar));
+            
+            // Indikator kursor untuk spasi
+            terminal.setCursor(curX, curY + 1);
+            if (globalCharIndex == cursorPosition) {
+                terminal.setColor(Color::YELLOW);
+                terminal.print("^");
+            } else {
+                terminal.print(" ");
+            }
+            
+            curX++;
+            globalCharIndex++;
         }
-
-        curX++;
     }
+    
     terminal.resetColor();
     
     // Instruksi awal
@@ -896,6 +942,8 @@ void GameEngine::processInput(char c) {
 
 /**
  * @brief Menampilkan layar hasil dengan statistik lengkap
+ * 
+ * Setelah selesai Programmer mode, kembalikan bahasa ke pilihan awal user.
  * 
  * Menampilkan WPM, Accuracy, Time, Errors, dan status unlock (campaign)
  */
@@ -1049,6 +1097,11 @@ void GameEngine::showResults() {
             if (c == 10 || c == 13) break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    // Restore bahasa asli setelah selesai Programmer mode
+    if (currentDifficulty == Difficulty::PROGRAMMER && !originalLanguage.empty()) {
+        currentLanguage = originalLanguage;
     }
 
     currentState = GameState::MENU_DIFFICULTY;

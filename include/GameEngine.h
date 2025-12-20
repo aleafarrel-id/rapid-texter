@@ -83,6 +83,7 @@ private:
     // ========================================================================
     
     std::string currentLanguage;    ///< Bahasa yang dipilih ("id", "en", "prog")
+    std::string originalLanguage;   ///< Bahasa asli yang dipilih user (ID/EN) - untuk restore setelah Programmer mode
     std::string currentMode;        ///< Mode game ("manual" atau "campaign")
     Difficulty currentDifficulty;   ///< Tingkat kesulitan (EASY/MEDIUM/HARD/PROGRAMMER)
     int targetWPM;                  ///< Target WPM untuk mode manual
