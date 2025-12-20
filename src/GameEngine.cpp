@@ -95,12 +95,14 @@ void GameEngine::printCentered(int y, std::string text, Color color) {
 }
 
 // Menggambar bar status di bagian bawah layar
+// [File: src/GameEngine.cpp]
+
 void GameEngine::drawStatusBar() {
     int w = terminal.getWidth();
     int h = terminal.getHeight();
-    int y = h - 2;
-    
-    // Menyiapkan string info status
+    int y = h - 2; // Posisi baris paling bawah dikurang 2
+
+    // 1. Siapkan Teks Status
     std::string lang = currentLanguage.empty() ? "N/A" : (currentLanguage == "id" ? "ID" : (currentLanguage == "en" ? "EN" : "PROG"));
     std::string time;
     if (selectedDuration == -1) time = "Inf";
@@ -109,17 +111,35 @@ void GameEngine::drawStatusBar() {
 
     std::string mode = currentMode.empty() ? "N/A" : (currentMode == "manual" ? "Manual" : "Campaign");
     if (currentLanguage == "prog") mode = "Programmer";
-    
+
     std::string status = " Lang: " + lang + " | Time: " + time + " | Mode: " + mode + " ";
-    
-    // Menggambar background biru penuh satu baris
+
+    // 2. Tentukan Lebar Kotak Biru
+    // Kita buat lebar kotak sedikit lebih panjang dari teksnya (+4 spasi)
+    int barWidth = status.length() + 75;
+
+    // Opsional: Tetapkan lebar minimum agar tidak terlalu kecil
+    if (barWidth < 40) barWidth = 40;
+    if (barWidth > w) barWidth = w; // Jangan melebihi lebar layar
+
+    // 3. Hitung Posisi Awal (startX) agar Center
+    // Rumus: (Lebar Layar - Lebar Kotak) / 2
+    int startX = (w - barWidth) / 2;
+
+    // 4. Gambar Background Biru
     terminal.setBackgroundColor(Color::BLUE);
-    for(int i=0; i<w; ++i) {
-        terminal.setCursor(i, y);
-        terminal.print(" ");
-    }
-    // Menulis teks status di atas background biru
+
+    // Buat string spasi kosong sepanjang barWidth
+    std::string bg(barWidth, ' ');
+
+    // PENTING: Terminal mulai dari koordinat 1, jadi startX + 1
+    terminal.setCursor(startX + 1, y);
+    terminal.print(bg);
+
+    // 5. Tulis Teks di Atasnya (Function printCentered sudah otomatis mencari tengah layar)
     printCentered(y, status, Color::WHITE);
+
+    // 6. Reset Warna
     terminal.resetColor();
 }
 
@@ -161,83 +181,128 @@ std::string GameEngine::getStringInput(bool digitsOnly) {
 // === HANDLERS (Logika Menu) ===
 
 void GameEngine::handleMenuLanguage() {
-    terminal.clear();
-    int h = terminal.getHeight();
-    int w = terminal.getWidth();
-    int cy = h / 2;
-    int cx = w / 2;
+    // Variabel untuk resize detection
+    int lastW = 0;
+    int lastH = 0;
 
-    // ASCII Art Judul
-    std::string title1 = " ____  _  _  ____  ____  ____ ";
-    std::string title2 = "(  _ \\/ )( \\(  _ \\(_  _)(    \\";
-    std::string title3 = " )   /) __ ( ) __/ _)(_  ) D (";
-    std::string title4 = "(__\\_)\\_)(_/(__)  (____)(____/";
-    std::string subtitle = "RAPID TEXTER";
+    // Loop terus menerus
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
 
-    // Gambar Kotak Menu
-    int boxW = 50;
-    int boxH = 14;
-    drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::CYAN);
+        // Hanya gambar ulang jika ukuran berubah (atau pertama kali jalan)
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
 
-    // Tampilkan Judul & Menu
-    printCentered(cy - 5, title1, Color::CYAN);
-    printCentered(cy - 4, title2, Color::CYAN);
-    printCentered(cy - 3, title3, Color::CYAN);
-    printCentered(cy - 2, title4, Color::CYAN);
-    printCentered(cy, subtitle, Color::BLUE);
+            terminal.clear();
 
-    printCentered(cy + 2, "[1] Indonesia (ID)");
-    printCentered(cy + 3, "[2] English (EN)");
-    printCentered(cy + 5, "(Q) Quit", Color::RED);
-    
-    drawStatusBar();
+            // --- KODE GAMBAR UI (Dipindahkan ke dalam loop) ---
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
 
-    // Loop input menu
-    while(true) {
+            // ASCII Art Judul
+			std::string title0 = "Sesudah";
+            std::string title1 = " ____  _  _  ____  ____  ____ ";
+            std::string title2 = "(  _ \\/ )( \\(  _ \\(_  _)(    \\";
+            std::string title3 = " )   /) __ ( ) __/ _)(_  ) D (";
+            std::string title4 = "(__\\_)\\_)(_/(__)  (____)(____/";
+            std::string subtitle = "RAPID TEXTER";
+
+            // Gambar Kotak Menu
+            int boxW = 50;
+            int boxH = 14;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+
+            // Tampilkan Judul & Menu
+            printCentered(cy - 6, title0, Color::CYAN);
+            printCentered(cy - 5, title1, Color::CYAN);
+            printCentered(cy - 4, title2, Color::CYAN);
+            printCentered(cy - 3, title3, Color::CYAN);
+            printCentered(cy - 2, title4, Color::CYAN);
+            printCentered(cy, subtitle, Color::BLUE);
+
+            printCentered(cy + 2, "[1] Indonesia (ID)");
+            printCentered(cy + 3, "[2] English (EN)");
+            printCentered(cy + 5, "(Q) Quit", Color::RED);
+
+            drawStatusBar();
+            // --------------------------------------------------
+        }
+
+        // Cek Input
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'q' || c == 'Q') { currentState = GameState::EXIT; return; }
             if (c == '1') { currentLanguage = "id"; currentState = GameState::MENU_DURATION; return; }
             if (c == '2') { currentLanguage = "en"; currentState = GameState::MENU_DURATION; return; }
         }
+
+        // Sleep agar tidak boros CPU saat di menu
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
 void GameEngine::handleMenuDuration() {
-    terminal.clear();
-    int h = terminal.getHeight();
-    int w = terminal.getWidth();
-    int cy = h / 2;
-    int cx = w / 2;
+    // [BARU] Variabel deteksi perubahan ukuran
+    int lastW = 0;
+    int lastH = 0;
 
-    int boxW = 50;
-    int boxH = 14;
-    drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::MAGENTA);
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
 
-    printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
-    printCentered(cy - 2, "[1] 15 Seconds");
-    printCentered(cy - 1, "[2] 30 Seconds");
-    printCentered(cy, "[3] 60 Seconds");
-    printCentered(cy + 1, "[4] Custom");
-    printCentered(cy + 2, "[5] Tanpa Waktu");
-    printCentered(cy + 4, "(B) Back", Color::YELLOW);
+        // [BARU] Cek apakah ukuran berubah?
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
 
-    drawStatusBar();
+            // Hitung ulang titik tengah
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
 
-    while(true) {
+            int boxW = 75;
+            int boxH = 14;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+
+            printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
+            printCentered(cy - 2, "[1] 15 Seconds");
+            printCentered(cy - 1, "[2] 30 Seconds");
+            printCentered(cy, "[3] 60 Seconds");
+            printCentered(cy + 1, "[4] Custom");
+            printCentered(cy + 2, "[5] Tanpa Waktu");
+            printCentered(cy + 4, "(B) Back", Color::YELLOW);
+
+            drawStatusBar();
+        }
+
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'b' || c == 'B') { currentState = GameState::MENU_LANGUAGE; return; }
             if (c == '1') { selectedDuration = 15; currentState = GameState::MENU_MODE; return; }
             if (c == '2') { selectedDuration = 30; currentState = GameState::MENU_MODE; return; }
             if (c == '3') { selectedDuration = 60; currentState = GameState::MENU_MODE; return; }
+            if (c == '5') { selectedDuration = -1; currentState = GameState::MENU_MODE; return; }
             if (c == '4') {
-                // Handle Custom Duration Input
+                // Logika input custom (tetap sederhana karena input memblokir loop sementara)
                 terminal.clear();
+                // Hitung ulang posisi untuk kotak input
+                int w = terminal.getWidth(); int h = terminal.getHeight();
+                int cy = h / 2; int cx = w / 2;
+
                 drawBox(cx - 30, cy - 5, 60, 10, Color::MAGENTA);
                 printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
                 std::string inp = getStringInput(true);
-                if (inp.empty()) { handleMenuDuration(); return; }
+
+                // Paksa refresh layar setelah input selesai
+                lastW = 0;
+
+                if (inp.empty()) continue; // Lanjut loop (akan refresh layar)
                 try {
                     int val = std::stoi(inp);
                     if (val > 0) {
@@ -245,127 +310,199 @@ void GameEngine::handleMenuDuration() {
                         currentState = GameState::MENU_MODE;
                         return;
                     }
-                } catch (...) {}
-                handleMenuDuration();
-                return;
+                }
+                catch (...) {}
+                continue;
             }
-            if (c == '5') { selectedDuration = -1; currentState = GameState::MENU_MODE; return; }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
 void GameEngine::handleMenuMode() {
-    terminal.clear();
-    int h = terminal.getHeight();
-    int w = terminal.getWidth();
-    int cy = h / 2;
-    int cx = w / 2;
+    int lastW = 0;
+    int lastH = 0;
 
-    int boxW = 50;
-    int boxH = 12;
-    drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::GREEN);
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
 
-    printCentered(cy - 4, "SELECT MODE", Color::GREEN);
-    printCentered(cy, "[1] Manual Mode");
-    printCentered(cy + 1, "[2] Campaign Mode");
-    printCentered(cy + 3, "(B) Back", Color::YELLOW);
-    
-    drawStatusBar();
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
 
-    while(true) {
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+
+            int boxW = 50;
+            int boxH = 12;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::GREEN);
+
+            printCentered(cy - 4, "SELECT MODE", Color::GREEN);
+            printCentered(cy, "[1] Manual Mode");
+            printCentered(cy + 1, "[2] Campaign Mode");
+            printCentered(cy + 3, "(B) Back", Color::YELLOW);
+
+            drawStatusBar();
+        }
+
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'b' || c == 'B') { currentState = GameState::MENU_DURATION; return; }
             if (c == '1') { currentMode = "manual"; currentState = GameState::MENU_DIFFICULTY; return; }
             if (c == '2') { currentMode = "campaign"; currentState = GameState::MENU_DIFFICULTY; return; }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
 void GameEngine::handleMenuDifficulty() {
-    terminal.clear();
-    int h = terminal.getHeight();
-    int w = terminal.getWidth();
-    int cy = h / 2;
-    int cx = w / 2;
-    
-    // Tampilan berbeda tergantung Mode yang dipilih
+    int lastW = 0;
+    int lastH = 0;
+
+    // --- BAGIAN KHUSUS MODE MANUAL (DIPERBAIKI) ---
     if (currentMode == "manual") {
-        // --- MANUAL MODE ---
-        int boxW = 50;
-        int boxH = 10;
-        drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::BLUE);
+        std::string inputBuf = ""; // Buffer untuk menyimpan ketikan angka
 
-        printCentered(cy - 3, "MANUAL SETUP", Color::BLUE);
-        printCentered(cy - 1, "Enter Target WPM:", Color::WHITE);
-        printCentered(cy + 3, "(ESC) Back | (ENTER) Confirm", Color::YELLOW);
-        
-        drawStatusBar();
+        while (true) {
+            int currW = terminal.getWidth();
+            int currH = terminal.getHeight();
+            bool sizeChanged = (currW != lastW || currH != lastH);
 
-        std::string inputBuf = getStringInput(true);
-        
-        if (inputBuf.empty()) {
-             currentState = GameState::MENU_MODE;
-             return;
-        }
+            // 1. Gambar Ulang (Jika ukuran berubah ATAU baru mulai)
+            if (sizeChanged) {
+                lastW = currW;
+                lastH = currH;
+                terminal.clear();
 
-        try {
-            targetWPM = std::stoi(inputBuf);
-        } catch (...) {
-            targetWPM = 40; // Default fallback
-        }
-        currentDifficulty = Difficulty::MEDIUM; // Default difficulty untuk manual
-        currentState = GameState::PLAYING;
-        resetSession(); // Siapkan game baru
-        return; 
-    } else {
-        // --- CAMPAIGN MODE ---
-        int boxW = 50;
-        int boxH = 16;
-        drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::MAGENTA);
-        
-        printCentered(cy - 6, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
-        
-        // Cek status unlock
-        std::string e = unlockedDifficulties[Difficulty::EASY] ? " " : " [LOCKED]";
-        std::string m = unlockedDifficulties[Difficulty::MEDIUM] ? " " : " [LOCKED]";
-        std::string h = unlockedDifficulties[Difficulty::HARD] ? " " : " [LOCKED]";
-        
-        // Ubah warna jika terkunci
-        Color cE = unlockedDifficulties[Difficulty::EASY] ? Color::WHITE : Color::RED;
-        Color cM = unlockedDifficulties[Difficulty::MEDIUM] ? Color::WHITE : Color::RED;
-        Color cH = unlockedDifficulties[Difficulty::HARD] ? Color::WHITE : Color::RED;
-        
-        printCentered(cy - 3, "[1] Easy" + e, cE);
-        printCentered(cy - 2, "[2] Medium" + m, cM);
-        printCentered(cy - 1, "[3] Hard" + h, cH);
-        printCentered(cy + 1, "[4] Programmer Mode");
-        
-        printCentered(cy + 4, "(B) Back", Color::YELLOW);
+                int h = terminal.getHeight();
+                int w = terminal.getWidth();
+                int cy = h / 2;
+                int cx = w / 2;
 
-        drawStatusBar();
+                int boxW = 50;
+                int boxH = 10;
+                drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::BLUE);
+                printCentered(cy - 3, "MANUAL SETUP", Color::BLUE);
+                printCentered(cy - 1, "Enter Target WPM:", Color::WHITE);
+                printCentered(cy + 3, "(ESC) Back | (ENTER) Confirm", Color::YELLOW);
 
-        while(true) {
-             if (terminal.hasInput()) {
-                char d = terminal.getInput();
-                if (d == 'b' || d == 'B') { currentState = GameState::MENU_MODE; return; }
-                
-                // Validasi pilihan berdasarkan status unlock
-                bool valid = false;
-                if (d == '1' && unlockedDifficulties[Difficulty::EASY]) { currentDifficulty = Difficulty::EASY; valid = true; }
-                if (d == '2' && unlockedDifficulties[Difficulty::MEDIUM]) { currentDifficulty = Difficulty::MEDIUM; valid = true; }
-                if (d == '3' && unlockedDifficulties[Difficulty::HARD]) { currentDifficulty = Difficulty::HARD; valid = true; }
-                if (d == '4') { currentDifficulty = Difficulty::PROGRAMMER; currentLanguage = "prog"; valid = true; } 
-                
-                if (valid) {
-                    // Jika programmer mode, bahasa otomatis ganti ke 'prog'
-                    if (currentDifficulty == Difficulty::PROGRAMMER) currentLanguage = "prog";
+                drawStatusBar();
+
+                // Gambar ulang teks yang sedang diketik
+                int inputX = cx - 10; // Posisi input agak ke kiri dari tengah
+                int inputY = cy + 1;
+
+                terminal.setCursor(inputX, inputY);
+                terminal.print(inputBuf);
+
+                // Posisikan kursor visual di ujung teks
+                terminal.setCursor(inputX + inputBuf.length(), inputY);
+                terminal.showCursor();
+            }
+
+            // 2. Handle Input (Manual, tanpa getStringInput)
+            if (terminal.hasInput()) {
+                char c = terminal.getInput();
+
+                // ENTER -> Konfirmasi
+                if (c == 10 || c == 13) {
+                    terminal.hideCursor();
+                    if (inputBuf.empty()) { currentState = GameState::MENU_MODE; return; }
+                    try { targetWPM = std::stoi(inputBuf); }
+                    catch (...) { targetWPM = 40; }
+                    currentDifficulty = Difficulty::MEDIUM;
                     currentState = GameState::PLAYING;
                     resetSession();
                     return;
                 }
-             }
+                // ESC -> Batal/Kembali
+                else if (c == 27) {
+                    terminal.hideCursor();
+                    currentState = GameState::MENU_MODE;
+                    return;
+                }
+                // BACKSPACE -> Hapus karakter
+                else if (c == 127 || c == '\b' || c == 8) {
+                    if (!inputBuf.empty()) {
+                        inputBuf.pop_back();
+                        // Trik: Set lastW=0 agar layar digambar ulang (bersih) di frame berikutnya
+                        lastW = 0;
+                    }
+                }
+                // ANGKA (0-9) -> Ketik
+                else if (c >= '0' && c <= '9') {
+                    if (inputBuf.length() < 5) { // Batasi panjang input
+                        inputBuf += c;
+                        terminal.print(std::string(1, c)); // Tampilkan langsung
+                    }
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
         }
+    }
+    // --- AKHIR BAGIAN MANUAL ---
+
+
+    // --- MODE CAMPAIGN (TETAP SAMA SEPERTI SEBELUMNYA) ---
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+
+            int boxW = 50;
+            int boxH = 16;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+
+            printCentered(cy - 6, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
+
+            std::string e = unlockedDifficulties[Difficulty::EASY] ? " " : " [LOCKED]";
+            std::string m = unlockedDifficulties[Difficulty::MEDIUM] ? " " : " [LOCKED]";
+            std::string hard = unlockedDifficulties[Difficulty::HARD] ? " " : " [LOCKED]";
+
+            Color cE = unlockedDifficulties[Difficulty::EASY] ? Color::WHITE : Color::RED;
+            Color cM = unlockedDifficulties[Difficulty::MEDIUM] ? Color::WHITE : Color::RED;
+            Color cH = unlockedDifficulties[Difficulty::HARD] ? Color::WHITE : Color::RED;
+
+            printCentered(cy - 3, "[1] Easy" + e, cE);
+            printCentered(cy - 2, "[2] Medium" + m, cM);
+            printCentered(cy - 1, "[3] Hard" + hard, cH);
+            printCentered(cy + 1, "[4] Programmer Mode");
+            printCentered(cy + 4, "(B) Back", Color::YELLOW);
+            drawStatusBar();
+        }
+
+        if (terminal.hasInput()) {
+            char d = terminal.getInput();
+            if (d == 'b' || d == 'B') { currentState = GameState::MENU_MODE; return; }
+
+            bool valid = false;
+            if (d == '1' && unlockedDifficulties[Difficulty::EASY]) { currentDifficulty = Difficulty::EASY; valid = true; }
+            if (d == '2' && unlockedDifficulties[Difficulty::MEDIUM]) { currentDifficulty = Difficulty::MEDIUM; valid = true; }
+            if (d == '3' && unlockedDifficulties[Difficulty::HARD]) { currentDifficulty = Difficulty::HARD; valid = true; }
+            if (d == '4') { currentDifficulty = Difficulty::PROGRAMMER; currentLanguage = "prog"; valid = true; }
+
+            if (valid) {
+                if (currentDifficulty == Difficulty::PROGRAMMER) currentLanguage = "prog";
+                currentState = GameState::PLAYING;
+                resetSession();
+                return;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -487,15 +624,31 @@ void GameEngine::renderGame() {
 
 // Loop utama permainan (mengetik)
 void GameEngine::gameLoop() {
-    terminal.clear(); 
-    
+    terminal.clear();
+
+    // Simpan ukuran terakhir untuk mendeteksi perubahan
+    int lastW = terminal.getWidth();
+    int lastH = terminal.getHeight();
+
     while (currentState == GameState::PLAYING) {
-        
+
+        // --- LOGIKA RESPONSIF ---
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        // Jika ukuran terminal berubah, bersihkan layar agar render ulang rapi
+        if (currW != lastW || currH != lastH) {
+            terminal.clear();
+            lastW = currW;
+            lastH = currH;
+        }
+        // -------------------------
+
         // Logika Timer
         if (isGameStarted) {
             auto now = std::chrono::steady_clock::now();
             int elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-            
+
             if (selectedDuration != -1) {
                 int remaining = selectedDuration - elapsed;
                 timeLimitSeconds = remaining;
@@ -505,20 +658,22 @@ void GameEngine::gameLoop() {
                     currentState = GameState::RESULTS;
                     return;
                 }
-            } else {
-                timeLimitSeconds = elapsed; 
+            }
+            else {
+                timeLimitSeconds = elapsed;
             }
         }
 
-        renderGame();
-        
+        renderGame(); // Fungsi ini otomatis menyesuaikan layout dengan lebar baru
+
         // Cek input non-blocking
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             processInput(c);
-        } else {
+        }
+        else {
             // Sleep sedikit untuk mengurangi penggunaan CPU
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
         }
     }
 }
@@ -536,7 +691,36 @@ void GameEngine::processInput(char c) {
     
     // Handle Backspace
     if (c == 127 || c == '\b' || c == 8) { 
-        if (cursorPosition > 0) {
+        int lockedLimit = 0;
+
+        // Logika: Cari posisi spasi terakhir yang diketik dengan sukses (kata sebelumnya benar)
+        // Kita mundur dari posisi kursor saat ini untuk mencari "checkpoint" terdekat
+        for (int i = cursorPosition - 1; i >= 0; --i) {
+            // Jika menemukan karakter spasi di target
+            if (i < (int)flatTargetString.length() && flatTargetString[i] == ' ') {
+
+                // Cek apakah apa yang diketik user dari awal sampai spasi ini SUDAH BENAR semua
+                bool match = true;
+                if (i < (int)typedString.length()) {
+                    // Bandingkan karakter per karakter sampai posisi spasi
+                    for (int k = 0; k <= i; ++k) {
+                        if (typedString[k] != flatTargetString[k]) {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    // Jika cocok, berarti kata sampai titik ini valid. Kunci posisi ini.
+                    if (match) {
+                        lockedLimit = i + 1; // Batas hapus adalah setelah spasi
+                        break; // Berhenti mencari
+                    }
+                }
+            }
+        }
+
+        // Hanya izinkan backspace jika posisi kursor masih di depan batas kunci
+        if (cursorPosition > lockedLimit) {
             cursorPosition--;
             typedString.pop_back();
         }
@@ -558,7 +742,7 @@ void GameEngine::processInput(char c) {
                 currentStats.correctKeystrokes++;
             } else {
                 currentStats.errors++;
-                terminal.beep(); // Bunyi jika salah
+                // terminal.beep(); // Bunyi jika salah
             }
             currentStats.totalKeystrokes++;
             cursorPosition++;
@@ -577,115 +761,92 @@ void GameEngine::showResults() {
     if (isGameStarted) {
         auto now = std::chrono::steady_clock::now();
         seconds = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() / 1000.0;
-        // Cap waktu max sesuai durasi agar WPM tidak aneh
         if (selectedDuration != -1 && seconds > selectedDuration) seconds = selectedDuration;
     }
-    
-    // Hitung statistik final
     currentStats.timeTaken = seconds;
     currentStats.calculate((int)flatTargetString.length());
-    
-    terminal.clear();
-    int h = terminal.getHeight();
-    int w = terminal.getWidth();
-    int cy = h / 2;
-    int cx = w / 2;
-    
-    // Gambar Kotak Hasil
-    int boxW = 50;
-    int boxH = 16;
-    drawBox(cx - boxW/2, cy - boxH/2, boxW, boxH, Color::CYAN);
 
-    printCentered(cy - 6, "RESULTS", Color::CYAN);
-    
-    int labelX = cx - 12;
-    int valueX = cx + 5;
-    
-    // Tampilkan Data
-    terminal.setCursor(labelX, cy - 3);
-    terminal.print("WPM:");
-    terminal.setCursor(valueX, cy - 3);
-    terminal.setColor(Color::GREEN);
-    terminal.print(std::to_string((int)currentStats.wpm));
-    terminal.resetColor();
-    
-    terminal.setCursor(labelX, cy - 2);
-    terminal.print("Accuracy:");
-    terminal.setCursor(valueX, cy - 2);
-    terminal.print(std::to_string((int)currentStats.accuracy) + "%");
+    int lastW = 0;
+    int lastH = 0;
 
-    terminal.setCursor(labelX, cy - 1);
-    terminal.print("Time:");
-    terminal.setCursor(valueX, cy - 1);
-    
-    std::stringstream stream;
-    stream << std::fixed << std::setprecision(1) << seconds;
-    terminal.print(stream.str() + "s");
-
-    terminal.setCursor(labelX, cy);
-    terminal.print("Errors:");
-    terminal.setCursor(valueX, cy);
-    terminal.setColor(Color::RED);
-    terminal.print(std::to_string(currentStats.errors));
-    terminal.resetColor();
-
-    if (currentMode == "manual") {
-        terminal.setCursor(labelX, cy + 1);
-        terminal.print("Target:");
-        terminal.setCursor(labelX + 20, cy + 1);
-        terminal.setColor(Color::YELLOW);
-        terminal.print(std::to_string(targetWPM));
-        terminal.resetColor();
-    }
-
-    // Evaluasi Keberhasilan (Campaign/Manual)
-    std::string msg = "";
-    Color msgColor = Color::YELLOW;
-    
-    if (currentMode == "campaign") {
-        bool pass = false;
-        // Kriteria kelulusan
-        if (currentDifficulty == Difficulty::EASY) {
-            if (currentStats.wpm >= 40 && currentStats.accuracy >= 80) pass = true;
-        } else if (currentDifficulty == Difficulty::MEDIUM) {
-            if (currentStats.wpm >= 60 && currentStats.accuracy >= 90) pass = true;
-        }
-        
-        if (pass) {
-            msg = "Level Passed! Unlocked Next.";
-            // Unlock level berikutnya
-            if (currentDifficulty == Difficulty::EASY) unlockedDifficulties[Difficulty::MEDIUM] = true;
-            if (currentDifficulty == Difficulty::MEDIUM) unlockedDifficulties[Difficulty::HARD] = true;
-        } else {
-            if (currentDifficulty != Difficulty::PROGRAMMER && currentDifficulty != Difficulty::HARD)
-                msg = "Level Failed.";
-        }
-    } else if (currentMode == "manual") {
-        if (currentStats.wpm >= targetWPM) {
-            msg = "TARGET REACHED!";
-            msgColor = Color::GREEN;
-        } else {
-            msg = "TARGET MISSED!";
-            msgColor = Color::RED;
-        }
-    }
-    
-    if (!msg.empty()) printCentered(cy + 3, msg, msgColor);
-    
-    // Pause sebentar sebelum bisa lanjut
-    printCentered(cy + 6, "...", Color::WHITE);
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    while (terminal.hasInput()) terminal.getInput(); // Buang buffer input sisa
-
-    printCentered(cy + 6, "Press ENTER to continue", Color::WHITE); 
-    
-    // Tunggu ENTER
+    // Loop Responsif untuk Layar Hasil
     while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+
+            int boxW = 50;
+            int boxH = 16;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+
+            printCentered(cy - 6, "RESULTS", Color::CYAN);
+
+            int labelX = cx - 12;
+            int valueX = cx + 5;
+
+            terminal.setCursor(labelX, cy - 3); terminal.print("WPM:");
+            terminal.setCursor(valueX, cy - 3); terminal.setColor(Color::GREEN);
+            terminal.print(std::to_string((int)currentStats.wpm)); terminal.resetColor();
+
+            terminal.setCursor(labelX, cy - 2); terminal.print("Accuracy:");
+            terminal.setCursor(valueX, cy - 2); terminal.print(std::to_string((int)currentStats.accuracy) + "%");
+
+            terminal.setCursor(labelX, cy - 1); terminal.print("Time:");
+            terminal.setCursor(valueX, cy - 1);
+            std::stringstream stream; stream << std::fixed << std::setprecision(1) << seconds;
+            terminal.print(stream.str() + "s");
+
+            terminal.setCursor(labelX, cy); terminal.print("Errors:");
+            terminal.setCursor(valueX, cy); terminal.setColor(Color::RED);
+            terminal.print(std::to_string(currentStats.errors)); terminal.resetColor();
+
+            if (currentMode == "manual") {
+                terminal.setCursor(labelX, cy + 1); terminal.print("Target:");
+                terminal.setCursor(labelX + 20, cy + 1); terminal.setColor(Color::YELLOW);
+                terminal.print(std::to_string(targetWPM)); terminal.resetColor();
+            }
+
+            std::string msg = "";
+            Color msgColor = Color::YELLOW;
+
+            if (currentMode == "campaign") {
+                bool pass = false;
+                if (currentDifficulty == Difficulty::EASY && currentStats.wpm >= 40 && currentStats.accuracy >= 80) pass = true;
+                else if (currentDifficulty == Difficulty::MEDIUM && currentStats.wpm >= 60 && currentStats.accuracy >= 90) pass = true;
+
+                if (pass) {
+                    msg = "Level Passed! Unlocked Next.";
+                    if (currentDifficulty == Difficulty::EASY) unlockedDifficulties[Difficulty::MEDIUM] = true;
+                    if (currentDifficulty == Difficulty::MEDIUM) unlockedDifficulties[Difficulty::HARD] = true;
+                }
+                else if (currentDifficulty != Difficulty::PROGRAMMER && currentDifficulty != Difficulty::HARD) {
+                    msg = "Level Failed.";
+                }
+            }
+            else if (currentMode == "manual") {
+                if (currentStats.wpm >= targetWPM) { msg = "TARGET REACHED!"; msgColor = Color::GREEN; }
+                else { msg = "TARGET MISSED!"; msgColor = Color::RED; }
+            }
+            if (!msg.empty()) printCentered(cy + 3, msg, msgColor);
+
+            printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
+        }
+
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 10 || c == 13) break;
+            if (c == 10 || c == 13) break; // Enter untuk keluar
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-    
+
     currentState = GameState::MENU_DIFFICULTY;
 }

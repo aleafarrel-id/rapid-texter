@@ -55,6 +55,9 @@ void Terminal::initialize() {
 #else
     enableRawMode();
 #endif
+    // Masuk ke Alternate Screen Buffer (Layar khusus aplikasi)
+    std::cout << "\033[?1049h";
+    std::cout.flush();
     hideCursor(); // Sembunyikan kursor agar tampilan game lebih bersih
 }
 
