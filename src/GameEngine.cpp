@@ -257,27 +257,34 @@ void GameEngine::handleMenuLanguage() {
             int cx = w / 2;
 
             // ASCII Art Banner
-            std::string title1 = " ____  _  _  ____  ____  ____ ";
-            std::string title2 = "(  _ \\/ )( \\(  _ \\(_  _)(    \\";
-            std::string title3 = " )   /) __ ( ) __/ _)(_  ) D (";
-            std::string title4 = "(__\\_)\\_)(_/(__)  (____)(____/";
+            std::string title1 = "  ______    ________   ______   ________  ______       ";
+            std::string title2 = " /_____/\\  /_______/\\ /_____/\\ /_______/\\/_____/\\      ";
+            std::string title3 = " \\:::_ \\ \\ \\::: _  \\ \\\\:::_ \\ \\\\__.::._\\/\\:::_ \\ \\     ";
+            std::string title4 = "  \\:(_) ) )_\\::(_)  \\ \\\\:(_) \\ \\  \\::\\ \\  \\:\\ \\ \\ \\    ";
+            std::string title5 = "   \\: __ `\\ \\\\:: __  \\ \\\\: ___\\/  _\\::\\ \\__\\:\\ \\ \\ \\   ";
+            std::string title6 = "    \\ \\ `\\ \\ \\\\:.\\ \\  \\ \\\\ \\ \\   /__\\::\\__/\\\\:\\/.:| |  ";
+            std::string title7 = "     \\_\\/ \\_\\/ \\__\\/\\__\\/ \\_\\/   \\________\\/ \\____/_/  ";
             std::string subtitle = "RAPID TEXTER";
 
             // Kotak menu
-            int boxW = 50;
-            int boxH = 13;
+            int boxW = 68; 
+            int boxH = 18; 
             drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
 
             // Tampilkan judul dan menu
-            printCentered(cy - 5, title1, Color::CYAN);
-            printCentered(cy - 4, title2, Color::CYAN);
-            printCentered(cy - 3, title3, Color::CYAN);
-            printCentered(cy - 2, title4, Color::CYAN);
-            printCentered(cy, subtitle, Color::BLUE);
+            printCentered(cy - 7, title1, Color::CYAN);
+            printCentered(cy - 6, title2, Color::CYAN);
+            printCentered(cy - 5, title3, Color::CYAN);
+            printCentered(cy - 4, title4, Color::CYAN);
+            printCentered(cy - 3, title5, Color::CYAN);
+            printCentered(cy - 2, title6, Color::CYAN);
+            printCentered(cy - 1, title7, Color::CYAN);
+            
+            printCentered(cy + 1, subtitle, Color::BLUE);
 
-            printCentered(cy + 2, "[1] Indonesia (ID)");
-            printCentered(cy + 3, "[2] English (EN)");
-            printCentered(cy + 5, "(Q) Quit", Color::RED);
+            printCentered(cy + 3, "[1] Indonesia (ID)");
+            printCentered(cy + 4, "[2] English (EN)");
+            printCentered(cy + 6, "(Q) Quit", Color::RED);
 
             drawStatusBar();
         }
