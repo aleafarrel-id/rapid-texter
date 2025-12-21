@@ -8,7 +8,7 @@
 
 **Uji kecepatan jari dan ketepatan pikiran Anda langsung dari Terminal.** Rapid Texter adalah aplikasi *Touch Typing* berbasis CLI yang ringan, cepat, dan estetis.
 
-[Fitur](#-fitur-utama) • [Instalasi](#-cara-compile--jalankan) • [Kontribusi](#-kontribusi)
+[Fitur](#-fitur-utama) • [Instalasi](#%EF%B8%8F-cara-compile--jalankan) • [Kontribusi](#-lisensi)
 
 </div>
 
