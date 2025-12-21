@@ -12,6 +12,7 @@
 #define TERMINAL_H
 
 #include <string>
+#include <sstream>
 
 /**
  * @enum Color
@@ -44,6 +45,7 @@ enum class Color {
  * - Cursor control (hide/show/move)
  * - Terminal size detection
  * - Clear screen
+ * - OPTIMIZED: Internal output buffering untuk performa maksimal
  */
 class Terminal {
 public:
@@ -132,6 +134,15 @@ public:
      * @brief Show cursor
      */
     void showCursor();
+    
+    /**
+     * @brief Flush internal buffer to screen (OPTIMIZATION)
+     * 
+     * Fungsi ini memaksa output buffer untuk langsung ditampilkan ke layar.
+     * Dipanggil di akhir setiap frame rendering untuk performa optimal.
+     * Menggantikan flush() yang dipanggil di setiap fungsi print/color.
+     */
+    void flush();
 
     // ========================================================================
     // Input Handling
@@ -183,6 +194,9 @@ private:
 #else
     // Linux menggunakan struct termios (didefinisikan di .cpp)
 #endif
+    
+    // OPTIMIZATION: Internal output buffer untuk batching
+    std::ostringstream outputBuffer; ///< Buffer untuk menampung output sebelum di-flush
 };
 
 #endif // TERMINAL_H

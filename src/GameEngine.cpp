@@ -6,6 +6,8 @@
  * 
  * File ini mengimplementasikan State Machine untuk mengelola alur aplikasi,
  * dari menu awal hingga gameplay dan hasil akhir.
+ * 
+ * OPTIMIZATION: Ditambahkan terminal.flush() calls untuk mengurangi I/O delay
  */
 
 #include "GameEngine.h"
@@ -266,6 +268,7 @@ std::string GameEngine::getStringInput(bool digitsOnly) {
                     terminal.setCursor(startX + inputBuf.length(), startY);
                     terminal.print(" ");
                     terminal.setCursor(startX + inputBuf.length(), startY);
+                    terminal.flush(); // Flush untuk visual feedback
                 }
             } 
             // Input karakter
@@ -273,6 +276,7 @@ std::string GameEngine::getStringInput(bool digitsOnly) {
                 if (c >= 32 && c <= 126 && inputBuf.length() < 20) {
                      inputBuf += c;
                      terminal.print(std::string(1, c));
+                     terminal.flush(); // Flush untuk visual feedback
                 }
             }
         }
@@ -337,6 +341,9 @@ void GameEngine::handleMenuLanguage() {
             printCentered(cy + 6, "(Q) Quit", Color::RED);
 
             drawStatusBar();
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         // Handle input
@@ -399,6 +406,9 @@ void GameEngine::handleMenuDuration() {
             printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
             drawStatusBar();
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         if (terminal.hasInput()) {
@@ -439,6 +449,7 @@ void GameEngine::handleMenuDuration() {
                 drawBox(cx - 30, cy - 5, 60, 12, Color::MAGENTA);
                 printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
                 printCentered(cy + 3, "(ESC) Cancel", Color::YELLOW);
+                terminal.flush(); // Flush before input
                 
                 std::string inp = getStringInput(true);
                 lastW = 0; // Force redraw
@@ -492,6 +503,9 @@ void GameEngine::handleMenuMode() {
             printCentered(cy + 3, "(B) Back", Color::YELLOW);
 
             drawStatusBar();
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         if (terminal.hasInput()) {
@@ -559,6 +573,9 @@ void GameEngine::handleMenuDifficulty() {
                 terminal.print(inputBuf);
                 terminal.setCursor(inputX + inputBuf.length(), inputY);
                 terminal.showCursor();
+                
+                // Flush setelah rendering selesai
+                terminal.flush();
             }
 
             // Handle input manual
@@ -600,6 +617,7 @@ void GameEngine::handleMenuDifficulty() {
                     if (inputBuf.length() < 5) {
                         inputBuf += c;
                         terminal.print(std::string(1, c));
+                        terminal.flush(); // Flush untuk visual feedback
                     }
                 }
             }
@@ -654,6 +672,9 @@ void GameEngine::handleMenuDifficulty() {
             
             printCentered(cy + 7, "(B) Back | (C) Credits", Color::YELLOW);
             drawStatusBar();
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         if (terminal.hasInput()) {
@@ -879,7 +900,11 @@ void GameEngine::renderGame() {
          printCentered(cy + 6, "                 ", Color::WHITE);
     }
     
-    terminal.hideCursor(); 
+    terminal.hideCursor();
+    
+    // Flush semua output buffer setelah rendering selesai
+    // Ini menggantikan ratusan flush() individual yang menyebabkan delay
+    terminal.flush();
 }
 
 /**
@@ -1075,6 +1100,9 @@ void GameEngine::showResults() {
         printCentered(cy + 2, "CONGRATULATIONS!!!", Color::GREEN);
         printCentered(cy + 4, "Preparing special surprise...", Color::YELLOW);
         
+        // Flush sebelum delay
+        terminal.flush();
+        
         // Delay agar user sempat membaca pesan
         std::this_thread::sleep_for(std::chrono::seconds(3));
         
@@ -1237,6 +1265,9 @@ void GameEngine::showResults() {
 
             printCentered(cy + 5, "(C) Credits", Color::YELLOW);
             printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         // Wait for ENTER or C
@@ -1319,6 +1350,9 @@ void GameEngine::showCredits() {
             
             printCentered(cy + 4, "Thank you for playing!", Color::GREEN);
             printCentered(cy + 6, "Press ENTER to return", Color::YELLOW);
+            
+            // Flush setelah rendering selesai
+            terminal.flush();
         }
 
         if (terminal.hasInput()) {

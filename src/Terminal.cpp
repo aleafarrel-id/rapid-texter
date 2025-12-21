@@ -56,8 +56,8 @@ void Terminal::initialize() {
     enableRawMode();
 #endif
     // Masuk ke Alternate Screen Buffer (Layar khusus aplikasi)
-    std::cout << "\033[?1049h";
-    std::cout.flush();
+    outputBuffer << "\033[?1049h";
+    flush(); // Flush sekali di initialization
     hideCursor(); // Sembunyikan kursor agar tampilan game lebih bersih
 }
 
@@ -72,6 +72,7 @@ void Terminal::cleanup() {
     disableRawMode();
 #endif
     showCursor(); // Tampilkan kembali kursor
+    flush(); // Flush terakhir saat cleanup
 }
 
 // Mengaktifkan Raw Mode (Input langsung dibaca tanpa tekan Enter, tidak ada echo otomatis)
@@ -111,14 +112,15 @@ void Terminal::disableRawMode() {
 void Terminal::clear() {
     // Gunakan ANSI escape codes (works on both platforms jika VT processing aktif)
     // \033[2J: Clear screen, \033[H: Move cursor to home (0,0)
-    std::cout << "\033[2J\033[H";
-    std::cout.flush(); // Paksa output segera
+    outputBuffer << "\033[2J\033[H";
+    // OPTIMIZATION: Clear adalah operasi penting, langsung flush
+    flush();
 }
 
 void Terminal::setCursor(int x, int y) {
     // ANSI Code untuk memindahkan kursor: \033[<baris>;<kolom>H
-    std::cout << "\033[" << y << ";" << x << "H";
-    std::cout.flush();
+    // OPTIMIZATION: Tidak flush, tunggu batch rendering selesai
+    outputBuffer << "\033[" << y << ";" << x << "H";
 }
 
 void Terminal::setColor(Color color) {
@@ -134,7 +136,8 @@ void Terminal::setColor(Color color) {
         case Color::BLACK: code = 30; break;
         default: code = 39; break;
     }
-    std::cout << "\033[" << code << "m";
+    // OPTIMIZATION: Tidak flush, buffer color code
+    outputBuffer << "\033[" << code << "m";
 }
 
 void Terminal::setBackgroundColor(Color color) {
@@ -150,36 +153,57 @@ void Terminal::setBackgroundColor(Color color) {
         case Color::BLACK: code = 40; break;
         default: code = 49; break;
     }
-    std::cout << "\033[" << code << "m";
+    // OPTIMIZATION: Tidak flush, buffer color code
+    outputBuffer << "\033[" << code << "m";
 }
 
 void Terminal::resetColor() {
-    std::cout << "\033[0m"; // ANSI Reset Code
+    // OPTIMIZATION: Tidak flush, buffer reset code
+    outputBuffer << "\033[0m"; // ANSI Reset Code
 }
 
 void Terminal::beep() {
-    std::cout << '\a'; // Karakter Bell
+    // Beep perlu langsung dieksekusi untuk feedback audio
+    std::cout << '\a';
     std::cout.flush();
 }
 
 void Terminal::print(const std::string& text) {
-    std::cout << text;
-    std::cout.flush();
+    // OPTIMIZATION: Buffer output, tidak langsung flush
+    // Ini adalah optimasi utama - mengurangi ratusan flush() calls per frame
+    outputBuffer << text;
 }
 
 void Terminal::printAt(int x, int y, const std::string& text) {
     setCursor(x, y);
     print(text);
+    // OPTIMIZATION: Tidak flush, akan di-flush batch di akhir frame
 }
 
 void Terminal::hideCursor() {
-    std::cout << "\033[?25l"; // ANSI Hide Cursor
-    std::cout.flush();
+    // OPTIMIZATION: Buffer hide cursor command
+    outputBuffer << "\033[?25l"; // ANSI Hide Cursor
+    // Cursor visibility change perlu flush untuk konsistensi visual
+    flush();
 }
 
 void Terminal::showCursor() {
-    std::cout << "\033[?25h"; // ANSI Show Cursor
-    std::cout.flush();
+    // OPTIMIZATION: Buffer show cursor command
+    outputBuffer << "\033[?25h"; // ANSI Show Cursor
+    // Cursor visibility change perlu flush untuk konsistensi visual
+    flush();
+}
+
+void Terminal::flush() {
+    // OPTIMIZATION CRITICAL: Fungsi ini dipanggil sekali per frame
+    // Menggantikan ratusan flush() calls individual
+    std::string buffered = outputBuffer.str();
+    if (!buffered.empty()) {
+        std::cout << buffered;
+        std::cout.flush();
+        outputBuffer.str(""); // Clear buffer
+        outputBuffer.clear(); // Clear state flags
+    }
 }
 
 // Mengecek apakah ada tombol yang ditekan (Non-blocking)
