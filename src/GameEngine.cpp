@@ -15,6 +15,7 @@
 #include <chrono>
 #include <iomanip>
 #include <cmath>
+#include <cstdlib>
 
 // ============================================================================
 // CONSTRUCTOR & INITIALIZATION
@@ -26,7 +27,7 @@
  * Menyiapkan terminal, mengatur status unlock awal untuk mode Campaign,
  * dan memuat database kata dari file eksternal.
  */
-GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE) {
+GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE), previousState(GameState::MENU_LANGUAGE) {
     terminal.initialize();
     
     // Setup unlock status untuk Campaign Mode
@@ -34,6 +35,7 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE) {
     unlockedDifficulties[Difficulty::MEDIUM] = false;      // ✗ Butuh: 40 WPM, 80% Akurasi (Easy)
     unlockedDifficulties[Difficulty::HARD] = false;        // ✗ Butuh: 60 WPM, 90% Akurasi (Medium)
     unlockedDifficulties[Difficulty::PROGRAMMER] = true;   // ✓ Bonus (selalu terbuka)
+    hardCompleted = false;                                 // Hard belum pernah diselesaikan
     
     // Load word databases
     textProvider.loadWords("id", "assets/id.txt");
@@ -52,7 +54,7 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE) {
  * @brief Loop utama aplikasi menggunakan State Machine pattern
  * 
  * Mengelola perpindahan antar state (menu bahasa, durasi, mode, difficulty,
- * gameplay, dan hasil).
+ * gameplay, hasil, dan credits).
  */
 void GameEngine::run() {
     while (currentState != GameState::EXIT) {
@@ -75,11 +77,37 @@ void GameEngine::run() {
             case GameState::RESULTS:
                 showResults();
                 break;
+            case GameState::CREDITS:
+                showCredits();
+                break;
             case GameState::EXIT:
                 break;
         }
     }
     terminal.cleanup();
+}
+
+// ============================================================================
+// RICK ROLL EASTER EGG
+// ============================================================================
+
+/**
+ * @brief Menjalankan Rick Roll easter egg sesuai platform
+ */
+void GameEngine::playRickRoll() {
+    terminal.cleanup(); // Restore terminal normal mode
+    terminal.showCursor();
+    
+#ifdef _WIN32
+    // Windows: Jalankan PowerShell script
+    system("powershell -ExecutionPolicy Bypass -File roll.ps1");
+#else
+    // Linux/Mac: Jalankan bash script
+    system("bash roll.sh");
+#endif
+    
+    terminal.initialize(); // Kembali ke raw mode
+    terminal.hideCursor();
 }
 
 // ============================================================================
@@ -574,10 +602,10 @@ void GameEngine::handleMenuDifficulty() {
             int cx = w / 2;
 
             int boxW = 60;
-            int boxH = 18;
+            int boxH = 20;
             drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
-            printCentered(cy - 7, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
+            printCentered(cy - 8, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
 
             // Status lock dan persyaratan
             bool easyUnlocked = unlockedDifficulties[Difficulty::EASY];
@@ -592,16 +620,17 @@ void GameEngine::handleMenuDifficulty() {
             Color cM = mediumUnlocked ? Color::WHITE : Color::RED;
             Color cH = hardUnlocked ? Color::WHITE : Color::RED;
 
-            printCentered(cy - 4, easyText, cE);
-            printCentered(cy - 3, mediumText, cM);
-            printCentered(cy - 2, hardText, cH);
-            printCentered(cy, "[4] Programmer Mode", Color::CYAN);
+            printCentered(cy - 5, easyText, cE);
+            printCentered(cy - 4, mediumText, cM);
+            printCentered(cy - 3, hardText, cH);
+            printCentered(cy - 1, "[4] Programmer Mode", Color::CYAN);
             
-            printCentered(cy + 3, "Requirements:", Color::YELLOW);
-            printCentered(cy + 4, "Easy -> Medium: 40 WPM, 80% Accuracy");
-            printCentered(cy + 5, "Medium -> Hard: 60 WPM, 90% Accuracy");
+            printCentered(cy + 2, "Requirements:", Color::YELLOW);
+            printCentered(cy + 3, "Easy -> Medium: 40 WPM, 80% Accuracy");
+            printCentered(cy + 4, "Medium -> Hard: 60 WPM, 90% Accuracy");
+            printCentered(cy + 5, "Hard Complete: 70 WPM, 90% Accuracy");
             
-            printCentered(cy + 7, "(B) Back", Color::YELLOW);
+            printCentered(cy + 7, "(C) Credits | (B) Back", Color::YELLOW);
             drawStatusBar();
         }
 
@@ -610,6 +639,13 @@ void GameEngine::handleMenuDifficulty() {
             if (d == 'b' || d == 'B') { 
                 currentState = GameState::MENU_MODE; 
                 return; 
+            }
+            
+            // Shortcut ke Credits
+            if (d == 'c' || d == 'C') {
+                previousState = GameState::MENU_DIFFICULTY;
+                currentState = GameState::CREDITS;
+                return;
             }
 
             bool valid = false;
@@ -984,50 +1020,50 @@ void GameEngine::showResults() {
             int cx = w / 2;
 
             int boxW = 50;
-            int boxH = 18;
+            int boxH = 20;
             drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
 
-            printCentered(cy - 7, "RESULTS", Color::CYAN);
+            printCentered(cy - 8, "RESULTS", Color::CYAN);
 
             // Posisi label dan value (aligned)
             int labelX = cx - 12;
             int valueX = cx + 5;
 
             // WPM
-            terminal.setCursor(labelX, cy - 4); 
+            terminal.setCursor(labelX, cy - 5); 
             terminal.print("WPM:");
-            terminal.setCursor(valueX, cy - 4); 
+            terminal.setCursor(valueX, cy - 5); 
             terminal.setColor(Color::GREEN);
             terminal.print(std::to_string((int)currentStats.wpm)); 
             terminal.resetColor();
 
             // Accuracy
-            terminal.setCursor(labelX, cy - 3); 
+            terminal.setCursor(labelX, cy - 4); 
             terminal.print("Accuracy:");
-            terminal.setCursor(valueX, cy - 3); 
+            terminal.setCursor(valueX, cy - 4); 
             terminal.print(std::to_string((int)currentStats.accuracy) + "%");
 
             // Time
-            terminal.setCursor(labelX, cy - 2); 
+            terminal.setCursor(labelX, cy - 3); 
             terminal.print("Time:");
-            terminal.setCursor(valueX, cy - 2);
+            terminal.setCursor(valueX, cy - 3);
             std::stringstream stream; 
             stream << std::fixed << std::setprecision(1) << seconds;
             terminal.print(stream.str() + "s");
 
             // Errors
-            terminal.setCursor(labelX, cy - 1); 
+            terminal.setCursor(labelX, cy - 2); 
             terminal.print("Errors:");
-            terminal.setCursor(valueX, cy - 1); 
+            terminal.setCursor(valueX, cy - 2); 
             terminal.setColor(Color::RED);
             terminal.print(std::to_string(currentStats.errors)); 
             terminal.resetColor();
 
-            // Target (Manual Mode Only) - FIXED ALIGNMENT
+            // Target (Manual Mode Only)
             if (currentMode == "manual") {
-                terminal.setCursor(labelX, cy); 
+                terminal.setCursor(labelX, cy - 1); 
                 terminal.print("Target:");
-                terminal.setCursor(valueX, cy); 
+                terminal.setCursor(valueX, cy - 1); 
                 terminal.setColor(Color::YELLOW);
                 terminal.print(std::to_string(targetWPM)); 
                 terminal.resetColor();
@@ -1036,6 +1072,7 @@ void GameEngine::showResults() {
             // Status dan pesan unlock
             std::string msg = "";
             Color msgColor = Color::YELLOW;
+            bool hardJustCompleted = false;
 
             if (currentMode == "campaign") {
                 bool pass = false;
@@ -1067,8 +1104,22 @@ void GameEngine::showResults() {
                     }
                 }
                 else if (currentDifficulty == Difficulty::HARD) {
-                    msg = "Congratulations! You completed Hard mode!";
-                    msgColor = Color::CYAN;
+                    requirement = "Need: 70 WPM, 90% Accuracy";
+                    if (currentStats.wpm >= 70 && currentStats.accuracy >= 90) {
+                        pass = true;
+                        if (!hardCompleted) {
+                            msg = "HARD MODE COMPLETED!!! CONGRATULATIONS!!!";
+                            msgColor = Color::GREEN;
+                            hardCompleted = true;
+                            hardJustCompleted = true;
+                        } else {
+                            msg = "HARD MODE PASSED!";
+                            msgColor = Color::GREEN;
+                        }
+                    } else {
+                        msg = "LEVEL FAILED";
+                        msgColor = Color::RED;
+                    }
                 }
                 else if (currentDifficulty == Difficulty::PROGRAMMER) {
                     msg = "Programmer Mode Completed!";
@@ -1077,10 +1128,10 @@ void GameEngine::showResults() {
                 
                 // Tampilkan pesan dan requirement
                 if (!msg.empty()) {
-                    printCentered(cy + 2, msg, msgColor);
+                    printCentered(cy + 1, msg, msgColor);
                 }
                 if (!requirement.empty() && !pass) {
-                    printCentered(cy + 3, requirement, Color::YELLOW);
+                    printCentered(cy + 2, requirement, Color::YELLOW);
                 }
             }
             // Manual Mode - Cek apakah target tercapai
@@ -1092,16 +1143,31 @@ void GameEngine::showResults() {
                     msg = "TARGET MISSED!"; 
                     msgColor = Color::RED; 
                 }
-                printCentered(cy + 3, msg, msgColor);
+                printCentered(cy + 2, msg, msgColor);
             }
 
+            printCentered(cy + 5, "(C) Credits", Color::YELLOW);
             printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
+            
+            // Jika baru saja selesaikan Hard untuk pertama kali, trigger Rick Roll
+            if (hardJustCompleted) {
+                // Tampilkan delay singkat agar user bisa lihat pesan
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                playRickRoll();
+                lastW = 0; // Force redraw setelah Rick Roll
+                hardJustCompleted = false; // Reset flag
+            }
         }
 
-        // Wait for ENTER
+        // Wait for ENTER or C
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 10 || c == 13) break;
+            if (c == 'c' || c == 'C') {
+                previousState = GameState::RESULTS;
+                currentState = GameState::CREDITS;
+                return;
+            }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -1112,4 +1178,60 @@ void GameEngine::showResults() {
     }
 
     currentState = GameState::MENU_DIFFICULTY;
+}
+
+// ============================================================================
+// CREDITS SCREEN
+// ============================================================================
+
+/**
+ * @brief Menampilkan layar credits dengan Rick Roll easter egg
+ */
+void GameEngine::showCredits() {
+    // Trigger Rick Roll sebelum menampilkan credits
+    playRickRoll();
+    
+    int lastW = 0, lastH = 0;
+
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+
+            int boxW = 50;
+            int boxH = 18;
+            drawBox((w - boxW) / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+
+            printCentered(cy - 7, "CREDITS", Color::MAGENTA);
+            printCentered(cy - 5, "Developed by:", Color::CYAN);
+            
+            // Nama-nama developer
+            printCentered(cy - 3, "Alea Farrel", Color::WHITE);
+            printCentered(cy - 2, "Hensa Katelu", Color::WHITE);
+            printCentered(cy - 1, "Candra", Color::WHITE);
+            printCentered(cy, "Arif Wibowo P.", Color::WHITE);
+            printCentered(cy + 1, "Aria Mahendra U.", Color::WHITE);
+            
+            printCentered(cy + 4, "Thank you for playing!", Color::GREEN);
+            printCentered(cy + 6, "Press ENTER to return", Color::YELLOW);
+        }
+
+        if (terminal.hasInput()) {
+            char c = terminal.getInput();
+            if (c == 10 || c == 13) {
+                // Kembali ke state sebelumnya
+                currentState = previousState;
+                return;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
 }

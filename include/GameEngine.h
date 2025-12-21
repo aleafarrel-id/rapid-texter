@@ -35,6 +35,7 @@ enum class GameState {
     MENU_DIFFICULTY,    ///< Menu kesulitan atau setup manual
     PLAYING,            ///< State saat game sedang berlangsung
     RESULTS,            ///< Layar hasil/statistik akhir
+    CREDITS,            ///< Layar credits
     EXIT                ///< Keluar dari program
 };
 
@@ -77,6 +78,7 @@ private:
     Terminal terminal;              ///< Handler untuk operasi terminal (I/O, colors, cursor)
     TextProvider textProvider;      ///< Provider untuk database kata-kata
     GameState currentState;         ///< State aktif saat ini dalam State Machine
+    GameState previousState;        ///< State sebelumnya (untuk kembali dari credits)
     
     // ========================================================================
     // PRIVATE MEMBERS - User Settings
@@ -106,6 +108,7 @@ private:
      * - Programmer: Selalu unlocked (bonus mode)
      */
     std::map<Difficulty, bool> unlockedDifficulties; 
+    bool hardCompleted;             ///< Flag untuk tracking apakah Hard sudah diselesaikan
     
     // ========================================================================
     // PRIVATE MEMBERS - Current Game Session Data
@@ -153,6 +156,11 @@ private:
      * @brief Handler untuk layar hasil/statistik
      */
     void showResults();
+    
+    /**
+     * @brief Handler untuk layar credits
+     */
+    void showCredits();
 
     // ========================================================================
     // PRIVATE METHODS - Game Logic Helpers
@@ -173,6 +181,11 @@ private:
      * @brief Reset semua data sesi game (kata, statistik, timer)
      */
     void resetSession();
+    
+    /**
+     * @brief Menjalankan Rick Roll easter egg
+     */
+    void playRickRoll();
     
     // ========================================================================
     // PRIVATE METHODS - UI Helpers
