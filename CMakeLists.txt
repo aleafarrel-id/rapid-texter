@@ -16,16 +16,22 @@ file(GLOB SOURCES "src/*.cpp")
 # Membuat file eksekusi (executable) bernama 'rapid_texter' dari source yang ditemukan
 add_executable(rapid_texter ${SOURCES})
 
-# --- BAGIAN PENTING: Manajemen Aset ---
-# perintah ini akan menyalin SELURUH folder 'assets' dari source code
-# ke dalam folder build tempat executable berada.
-#
-# Hasilnya nanti di folder build akan ada folder: .../build/assets/id.txt, dll.
-# Ini sesuai dengan path baru di C++: "assets/id.txt"
+# --- BAGIAN PENTING: Manajemen Aset & Script ---
 
+# Copy folder 'assets' (Word database)
 add_custom_command(TARGET rapid_texter POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets
     $<TARGET_FILE_DIR:rapid_texter>/assets
-    COMMENT "Menyalin folder assets ke direktori output..."
+    COMMENT "Menyalin folder assets game..."
+)
+
+# Copy folder 'roll' (Rickroll scripts & assets)
+# Ini akan menyalin folder roll/ beserta isinya (roll.ps1, roll.sh, roll.wav, astley.txt)
+# ke folder build yang sama dengan executable.
+add_custom_command(TARGET rapid_texter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/roll
+    $<TARGET_FILE_DIR:rapid_texter>/roll
+    COMMENT "Menyalin folder rickroll..."
 )

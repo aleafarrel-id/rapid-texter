@@ -99,11 +99,11 @@ void GameEngine::playRickRoll() {
     terminal.showCursor();
     
 #ifdef _WIN32
-    // Windows: Jalankan PowerShell script
-    system("powershell -ExecutionPolicy Bypass -File roll.ps1");
+    // Windows: Jalankan PowerShell script dari folder 'roll/'
+    system("powershell -ExecutionPolicy Bypass -File roll/roll.ps1");
 #else
-    // Linux/Mac: Jalankan bash script
-    system("bash roll.sh");
+    // Linux/Mac: Jalankan bash script dari folder 'roll/'
+    system("bash roll/roll.sh");
 #endif
     
     terminal.initialize(); // Kembali ke raw mode
@@ -1216,7 +1216,7 @@ void GameEngine::showCredits() {
             // Nama-nama developer
             printCentered(cy - 3, "Alea Farrel", Color::WHITE);
             printCentered(cy - 2, "Hensa Katelu", Color::WHITE);
-            printCentered(cy - 1, "Candra", Color::WHITE);
+            printCentered(cy - 1, "Yanuar Adi Candra", Color::WHITE);
             printCentered(cy, "Arif Wibowo P.", Color::WHITE);
             printCentered(cy + 1, "Aria Mahendra U.", Color::WHITE);
             
