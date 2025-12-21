@@ -28,8 +28,6 @@ if ([System.Environment]::OSVersion.Version.Major -ge 10) {
 }
 
 # --- KONFIGURASI PATH ---
-# Script ini berada di dalam folder 'roll/' bersama asetnya,
-# Cukup cari file di direktori yang sama ($currentDir).
 $audioPath = Join-Path $currentDir "roll.wav"
 $videoPath = Join-Path $currentDir "astley.txt"
 
@@ -46,67 +44,110 @@ if (-not (Test-Path $videoPath)) {
 }
 
 # --- SETUP TAMPILAN ---
-# Simpan judul asli
 $originalTitle = $host.UI.RawUI.WindowTitle
 $host.UI.RawUI.WindowTitle = "Press ANY KEY to Stop"
-try { [Console]::CursorVisible = $false } catch {}
+
+try {
+    $bufferSize = $host.UI.RawUI.BufferSize
+    $windowSize = $host.UI.RawUI.WindowSize
+    
+    if ($windowSize.Height -lt 34) {
+        $windowSize.Height = 34
+        $host.UI.RawUI.WindowSize = $windowSize
+    }
+    
+    $bufferSize.Height = $windowSize.Height
+    $bufferSize.Width = 85
+    $host.UI.RawUI.BufferSize = $bufferSize
+    
+    [Console]::CursorVisible = $false
+} catch {}
 
 # --- FUNGSI UTAMA ---
 function Start-RickRoll {
-    # 1. Load Video ke RAM
+    # Load Video ke RAM
     $frames = [System.IO.File]::ReadAllLines($videoPath)
     
     Clear-Host
     Write-Host "Press ANY KEY to skip..." -ForegroundColor DarkGray
     
-    # 2. Setup Audio Player
+    # Setup Audio Player
     $player = New-Object System.Media.SoundPlayer $audioPath
     
     try {
-        $player.Play() # Play Async
+        $player.Play()
 
-        $sb = New-Object System.Text.StringBuilder
+        # ANSI Escape Codes untuk Windows
+        $ESC = [char]27
+        $cursorHome = "$ESC[2;1H"      # Move ke baris 2, kolom 1
+        $clearScreen = "$ESC[0J"       # Clear dari cursor sampai akhir screen
+        
+        # Pre-build clear sequence untuk 32 baris dengan ANSI
+        $clearLines = New-Object System.Text.StringBuilder 1500
+        for ($i = 2; $i -le 33; $i++) {
+            [void]$clearLines.Append("$ESC[$i;1H$ESC[2K")  # Move + clear entire line
+        }
+        $clearLinesStr = $clearLines.ToString()
+        
+        # Frame builder
+        $sb = New-Object System.Text.StringBuilder 6000
         $lineCounter = 0
-        [Console]::SetCursorPosition(0,0)
+        
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $targetFrameTime = 33
 
-        # 3. Loop Animasi
+        # Loop Animasi
         foreach ($line in $frames) {
             
-            # --- FITUR STOP ---
-            # Jika user menekan tombol apa saja, hentikan loop
             if ([Console]::KeyAvailable) {
-                # Baca key agar tidak tertinggal di buffer input C++ nanti
                 $null = [Console]::ReadKey($true)
                 break 
             }
 
-            [void]$sb.Append($line + "`n")
+            # Pad line ke 80 karakter untuk overwrite
+            $paddedLine = $line.PadRight(80)
+            
+            if ($lineCounter -eq 31) {
+                [void]$sb.Append($paddedLine)
+            } else {
+                [void]$sb.Append($paddedLine + "`n")
+            }
             $lineCounter++
 
             # Setiap 32 baris = 1 Frame
             if ($lineCounter -ge 32) {
-                [Console]::SetCursorPosition(0,0)
                 
-                # Print frame
-                [Console]::Out.Write($sb.ToString().TrimEnd())
+                # --- SYNC FRAMERATE ---
+                while ($stopwatch.ElapsedMilliseconds -lt $targetFrameTime) {
+                    if ($targetFrameTime - $stopwatch.ElapsedMilliseconds -gt 5) {
+                        Start-Sleep -Milliseconds 1
+                    }
+                }
+                $stopwatch.Restart()
+
+                # STRATEGI RENDERING OPTIMAL UNTUK WINDOWS:
+                # 1. Clear semua line dengan ANSI (cepat)
+                # 2. Home position
+                # 3. Tulis frame baru
+                # Semua dalam satu atomic write operation
+                
+                $finalOutput = $clearLinesStr + $cursorHome + $sb.ToString()
+                
+                # Single atomic write - paling cepat!
+                [Console]::Write($finalOutput)
                 
                 # Reset
                 [void]$sb.Clear()
                 $lineCounter = 0
-
-                # Delay 35ms (~25-28 FPS)
-                Start-Sleep -Milliseconds 35
             }
         }
     } finally {
-        # 4. CLEANUP (Sangat Penting)
-        # Memastikan audio mati total sebelum kembali ke C++
+        # CLEANUP
         if ($player) {
             $player.Stop()
             $player.Dispose()
         }
         
-        # Restore judul asli
         if ($originalTitle) {
             $host.UI.RawUI.WindowTitle = $originalTitle
         }
