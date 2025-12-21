@@ -109,6 +109,7 @@ private:
      */
     std::map<Difficulty, bool> unlockedDifficulties; 
     bool hardCompleted;             ///< Flag untuk tracking apakah Hard sudah diselesaikan
+    bool rickRollAlreadyShown;      ///< Flag untuk mencegah Rick Roll dipanggil dua kali berturut-turut
     
     // ========================================================================
     // PRIVATE MEMBERS - Current Game Session Data
@@ -186,6 +187,14 @@ private:
      * @brief Menjalankan Rick Roll easter egg
      */
     void playRickRoll();
+    
+    /**
+     * @brief Restore bahasa ke pilihan asli setelah Programmer Mode
+     * 
+     * Function ini memastikan bahasa kembali ke ID/EN yang dipilih user
+     * setelah selesai atau keluar dari Programmer Mode
+     */
+    void restoreLanguageFromProgrammerMode();
     
     // ========================================================================
     // PRIVATE METHODS - UI Helpers

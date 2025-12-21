@@ -36,6 +36,7 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE), previousState
     unlockedDifficulties[Difficulty::HARD] = false;        // ✗ Butuh: 60 WPM, 90% Akurasi (Medium)
     unlockedDifficulties[Difficulty::PROGRAMMER] = true;   // ✓ Bonus (selalu terbuka)
     hardCompleted = false;                                 // Hard belum pernah diselesaikan
+    rickRollAlreadyShown = false;                          // Rick Roll belum ditampilkan
     
     // Load word databases
     textProvider.loadWords("id", "assets/id.txt");
@@ -108,6 +109,27 @@ void GameEngine::playRickRoll() {
     
     terminal.initialize(); // Kembali ke raw mode
     terminal.hideCursor();
+}
+
+// ============================================================================
+// LANGUAGE RESTORATION HELPER
+// ============================================================================
+
+/**
+ * @brief Restore bahasa ke pilihan asli setelah Programmer Mode
+ * 
+ * Function ini dipanggil setiap kali keluar dari Programmer Mode untuk
+ * memastikan bahasa kembali ke ID/EN yang dipilih user di awal.
+ * 
+ * Dipanggil di:
+ * - processInput() saat user tekan ESC
+ * - showResults() setelah game selesai
+ * - handleMenuDifficulty() saat user kembali ke menu
+ */
+void GameEngine::restoreLanguageFromProgrammerMode() {
+    if (currentDifficulty == Difficulty::PROGRAMMER && !originalLanguage.empty()) {
+        currentLanguage = originalLanguage;
+    }
 }
 
 // ============================================================================
@@ -636,7 +658,10 @@ void GameEngine::handleMenuDifficulty() {
 
         if (terminal.hasInput()) {
             char d = terminal.getInput();
-            if (d == 'b' || d == 'B') { 
+            
+            // Restore bahasa saat user kembali dari menu
+            if (d == 'b' || d == 'B') {
+                restoreLanguageFromProgrammerMode();
                 currentState = GameState::MENU_MODE; 
                 return; 
             }
@@ -684,7 +709,12 @@ void GameEngine::handleMenuDifficulty() {
 /**
  * @brief Reset semua data sesi permainan sebelum mulai
  * 
- * Mengambil kata acak, reset statistik, dan siapkan timer
+ * Mengambil kata acak, reset statistik, dan siapkan timer.
+ * 
+ * CATATAN PENTING:
+ * - Function ini TIDAK restore bahasa dari Programmer Mode
+ * - Karena digunakan untuk restart (TAB) di tengah permainan
+ * - Bahasa hanya di-restore saat benar-benar keluar (ESC atau selesai)
  */
 void GameEngine::resetSession() {
     // Ambil kata-kata acak dari TextProvider
@@ -907,10 +937,15 @@ void GameEngine::gameLoop() {
  * @param c Karakter yang ditekan
  * 
  * Menangani ESC (exit), TAB (restart), BACKSPACE, dan karakter biasa
+ * 
+ * - Restore bahasa dari Programmer Mode saat ESC ditekan
  */
 void GameEngine::processInput(char c) {
     // ESC - Kembali ke menu
-    if (c == 27) { 
+    if (c == 27) {
+        // Restore bahasa jika keluar dari Programmer Mode
+        restoreLanguageFromProgrammerMode();
+        
         currentState = GameState::MENU_DIFFICULTY; 
         return;
     }
@@ -986,8 +1021,11 @@ void GameEngine::processInput(char c) {
 /**
  * @brief Menampilkan layar hasil dengan statistik lengkap
  * 
- * Setelah selesai Programmer mode, kembalikan bahasa ke pilihan awal user.
+ * - Cek hardJustCompleted SEBELUM masuk loop rendering
+ * - Setelah Rick Roll selesai, langsung redirect ke Credits
+ * - Mencegah input buffer yang tertinggal dari Rick Roll
  * 
+ * Setelah selesai Programmer mode, kembalikan bahasa ke pilihan awal user.
  * Menampilkan WPM, Accuracy, Time, Errors, dan status unlock (campaign)
  */
 void GameEngine::showResults() {
@@ -1003,6 +1041,63 @@ void GameEngine::showResults() {
     currentStats.timeTaken = seconds;
     currentStats.calculate((int)flatTargetString.length());
 
+    bool shouldShowRickRoll = false;
+    bool hardJustCompleted = false;
+    
+    // Cek apakah ini pertama kali menyelesaikan Hard mode
+    if (currentMode == "campaign" && currentDifficulty == Difficulty::HARD) {
+        if (currentStats.wpm >= 70 && currentStats.accuracy >= 90) {
+            if (!hardCompleted) {
+                hardCompleted = true;
+                shouldShowRickRoll = true;
+                hardJustCompleted = true;
+            }
+        }
+    }
+
+    // Jika baru menyelesaikan Hard, langsung tampilkan pesan selamat, lalu Rick Roll, lalu Credits
+    if (shouldShowRickRoll) {
+        terminal.clear();
+        int h = terminal.getHeight();
+        int w = terminal.getWidth();
+        int cy = h / 2;
+        int cx = w / 2;
+
+        // Tampilkan pesan selamat terlebih dahulu
+        int boxW = 60;
+        int boxH = 15;
+        drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+        
+        printCentered(cy - 5, "RESULTS", Color::CYAN);
+        printCentered(cy - 2, "WPM: " + std::to_string((int)currentStats.wpm), Color::GREEN);
+        printCentered(cy - 1, "Accuracy: " + std::to_string((int)currentStats.accuracy) + "%", Color::WHITE);
+        printCentered(cy + 1, "HARD MODE COMPLETED!!!", Color::GREEN);
+        printCentered(cy + 2, "CONGRATULATIONS!!!", Color::GREEN);
+        printCentered(cy + 4, "Preparing special surprise...", Color::YELLOW);
+        
+        // Delay agar user sempat membaca pesan
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        
+        // Jalankan Rick Roll
+        playRickRoll();
+        
+        // Set flag bahwa Rick Roll sudah ditampilkan
+        rickRollAlreadyShown = true;
+        
+        // Clear input buffer yang mungkin tertinggal dari Rick Roll
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
+        // Langsung redirect ke Credits setelah Rick Roll
+        previousState = GameState::MENU_DIFFICULTY;
+        currentState = GameState::CREDITS;
+        return;
+    }
+
+    // ========================================================================
+    // RENDER LOOP NORMAL (JIKA TIDAK ADA RICK ROLL)
+    // ========================================================================
     int lastW = 0, lastH = 0;
 
     while (true) {
@@ -1072,7 +1167,6 @@ void GameEngine::showResults() {
             // Status dan pesan unlock
             std::string msg = "";
             Color msgColor = Color::YELLOW;
-            bool hardJustCompleted = false;
 
             if (currentMode == "campaign") {
                 bool pass = false;
@@ -1106,13 +1200,8 @@ void GameEngine::showResults() {
                 else if (currentDifficulty == Difficulty::HARD) {
                     requirement = "Need: 70 WPM, 90% Accuracy";
                     if (currentStats.wpm >= 70 && currentStats.accuracy >= 90) {
-                        pass = true;
-                        if (!hardCompleted) {
-                            msg = "HARD MODE COMPLETED!!! CONGRATULATIONS!!!";
-                            msgColor = Color::GREEN;
-                            hardCompleted = true;
-                            hardJustCompleted = true;
-                        } else {
+                        // Jika sudah pernah complete sebelumnya
+                        if (hardCompleted) {
                             msg = "HARD MODE PASSED!";
                             msgColor = Color::GREEN;
                         }
@@ -1148,15 +1237,6 @@ void GameEngine::showResults() {
 
             printCentered(cy + 5, "(C) Credits", Color::YELLOW);
             printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
-            
-            // Jika baru saja selesaikan Hard untuk pertama kali, trigger Rick Roll
-            if (hardJustCompleted) {
-                // Tampilkan delay singkat agar user bisa lihat pesan
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-                playRickRoll();
-                lastW = 0; // Force redraw setelah Rick Roll
-                hardJustCompleted = false; // Reset flag
-            }
         }
 
         // Wait for ENTER or C
@@ -1173,9 +1253,7 @@ void GameEngine::showResults() {
     }
 
     // Restore bahasa asli setelah selesai Programmer mode
-    if (currentDifficulty == Difficulty::PROGRAMMER && !originalLanguage.empty()) {
-        currentLanguage = originalLanguage;
-    }
+    restoreLanguageFromProgrammerMode();
 
     currentState = GameState::MENU_DIFFICULTY;
 }
@@ -1186,10 +1264,29 @@ void GameEngine::showResults() {
 
 /**
  * @brief Menampilkan layar credits dengan Rick Roll easter egg
+ * 
+ * - Cek flag rickRollAlreadyShown untuk mencegah Rick Roll dipanggil dua kali
+ * - Jika dipanggil setelah Hard completion, skip Rick Roll (sudah ditampilkan di showResults)
+ * - Jika dipanggil dari menu (tekan C), tampilkan Rick Roll
+ * - Clear input buffer setelah Rick Roll untuk mencegah input tertinggal
+ * - Reset flag setelah selesai agar Rick Roll bisa tampil lagi di sesi berikutnya
  */
 void GameEngine::showCredits() {
-    // Trigger Rick Roll sebelum menampilkan credits
-    playRickRoll();
+    // Hanya jalankan Rick Roll jika belum ditampilkan (dipanggil dari menu)
+    if (!rickRollAlreadyShown) {
+        playRickRoll();
+        
+        // Bersihkan semua input yang mungkin tertinggal dari Rick Roll script
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
+        // Delay singkat untuk memastikan terminal state stabil
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    
+    // Reset flag untuk sesi berikutnya (jika user tekan C lagi dari menu)
+    rickRollAlreadyShown = false;
     
     int lastW = 0, lastH = 0;
 
