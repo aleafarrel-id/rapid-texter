@@ -630,7 +630,7 @@ void GameEngine::handleMenuDifficulty() {
             printCentered(cy + 4, "Medium -> Hard: 60 WPM, 90% Accuracy");
             printCentered(cy + 5, "Hard Complete: 70 WPM, 90% Accuracy");
             
-            printCentered(cy + 7, "(C) Credits | (B) Back", Color::YELLOW);
+            printCentered(cy + 7, "(B) Back | (C) Credits", Color::YELLOW);
             drawStatusBar();
         }
 
