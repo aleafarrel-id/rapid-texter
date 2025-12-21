@@ -21,10 +21,11 @@
 * **📊 Statistik Real-time:** Pantau WPM (*Words Per Minute*), Akurasi, dan Waktu secara langsung.
 * **🎨 Cross-Platform:** Tampilan cantik yang konsisten di **Windows** (CMD/PowerShell) dan **Linux**.
 * **🚀 Ringan:** Tanpa GUI berat, berjalan instan di terminal apa saja.
+* **🎵 Easter Egg:** Temukan kejutan fitur rahasia yang tersembunyi di dalam folder `roll/`.
 
 ## 🛠️ Cara Compile & Jalankan
 
-Kami telah menyederhanakan proses instalasi. Anda tidak perlu repot membuat folder build secara manual. Hasil compile akan langsung muncul di folder ini.
+Project ini menggunakan **CMake** untuk mempermudah proses instalasi. Anda tidak perlu repot membuat folder build secara manual. Hasil compile akan langsung muncul di folder ini.
 
 ### Prasyarat
 Pastikan Anda sudah menginstall:
@@ -66,10 +67,11 @@ rapid_texter.exe
 ```text
 rapid-texter/
 ├── assets/         # Database kata (ID, EN, Code)
+├── roll/           # File tambahan untuk fitur rahasia
 ├── include/        # Header files (.h)
 ├── src/            # Source code (.cpp)
 ├── CMakeLists.txt  # Konfigurasi Build
-└── rapid_texter    # (Akan muncul setelah compile)
+└── README.md       # Dokumentasi ini
 ```
 
 ## 📜 Lisensi
