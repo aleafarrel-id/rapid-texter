@@ -1,37 +1,58 @@
 cmake_minimum_required(VERSION 3.10)
+project(RapidTexter)
 
-# Nama Proyek dan Versi
-project(RapidTexter VERSION 1.0.0 LANGUAGES CXX)
-
-# Menentukan Standar C++ (C++17 disarankan untuk fitur modern)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Menambahkan folder 'include' agar header file (.h) bisa ditemukan
-include_directories(include)
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Mencari seluruh file source (.cpp) di dalam folder src
+# Source files
 file(GLOB SOURCES "src/*.cpp")
 
-# Membuat file eksekusi (executable) bernama 'rapid_texter' dari source yang ditemukan
-add_executable(rapid_texter ${SOURCES})
+# Create executable
+add_executable(RapidTexter ${SOURCES})
 
-# --- BAGIAN PENTING: Manajemen Aset & Script ---
+# ------------------------------------------------------------------------------
+# KONFIGURASI PLATFORM (OS)
+# ------------------------------------------------------------------------------
 
-# Copy folder 'assets' (Word database)
-add_custom_command(TARGET rapid_texter POST_BUILD
+# 1. WINDOWS
+if(WIN32)
+    # Jika menggunakan MinGW/GCC/Clang, gunakan Static Linking agar portable
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_link_options(RapidTexter PRIVATE 
+            -static 
+            -static-libgcc 
+            -static-libstdc++
+        )
+    endif()
+    
+    # PENTING: Link library multimedia Windows (winmm) untuk fungsi PlaySound
+    target_link_libraries(RapidTexter PRIVATE -static -lwinmm)
+    
+# 2. LINUX / UNIX
+elseif(UNIX AND NOT APPLE)
+    # Di Linux, kita perlu mencari dan me-link library Threads (pthread) secara eksplisit
+    find_package(Threads REQUIRED)
+    target_link_libraries(RapidTexter PRIVATE Threads::Threads)
+endif()
+
+# ------------------------------------------------------------------------------
+# COPY ASSETS (Berjalan di semua OS)
+# ------------------------------------------------------------------------------
+
+# Copy assets directory
+add_custom_command(TARGET RapidTexter POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets
-    $<TARGET_FILE_DIR:rapid_texter>/assets
-    COMMENT "Menyalin folder assets game..."
+    $<TARGET_FILE_DIR:RapidTexter>/assets
+    COMMENT "Copying assets directory..."
 )
 
-# Copy folder 'roll' (Rickroll scripts & assets)
-# Ini akan menyalin folder roll/ beserta isinya (roll.ps1, roll.sh, roll.wav, astley.txt)
-# ke folder build yang sama dengan executable.
-add_custom_command(TARGET rapid_texter POST_BUILD
+# Copy roll directory
+add_custom_command(TARGET RapidTexter POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/roll
-    $<TARGET_FILE_DIR:rapid_texter>/roll
-    COMMENT "Menyalin folder rickroll..."
+    $<TARGET_FILE_DIR:RapidTexter>/roll
+    COMMENT "Copying roll directory..."
 )
