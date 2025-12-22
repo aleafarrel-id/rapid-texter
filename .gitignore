@@ -13,3 +13,7 @@ Makefile
 *.log
 *.obj
 *.o
+appimagetool*
+*.AppImage
+build_linux/*
+AppDir/*
