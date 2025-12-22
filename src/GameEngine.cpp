@@ -1338,7 +1338,10 @@ void GameEngine::showResults() {
             char c = terminal.getInput();
             if (c == 10 || c == 13) break;
             if (c == 'c' || c == 'C') {
-                previousState = GameState::RESULTS;
+                // CRITICAL: Set previousState ke MENU_DIFFICULTY, bukan RESULTS
+                // Mencegah infinite loop: results -> credits -> results
+                // Sekarang flow: results -> credits -> menu difficulty ✓
+                previousState = GameState::MENU_DIFFICULTY;
                 currentState = GameState::CREDITS;
                 return;
             }
@@ -1348,6 +1351,16 @@ void GameEngine::showResults() {
 
     // Restore bahasa asli setelah selesai Programmer mode
     restoreLanguageFromProgrammerMode();
+    
+    // CRITICAL: Reset session sebelum kembali ke menu
+    // Membersihkan semua state (isGameStarted, stats, buffers, dll)
+    // untuk mencegah corrupt data di game berikutnya
+    resetSession();
+    
+    // Clear input buffer untuk safety
+    while (terminal.hasInput()) {
+        terminal.getInput();
+    }
 
     currentState = GameState::MENU_DIFFICULTY;
 }
