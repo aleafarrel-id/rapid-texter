@@ -1170,6 +1170,16 @@ void GameEngine::showResults() {
             terminal.getInput();
         }
         
+        // Reset session sebelum pindah ke Credits
+        // Menggunakan resetSession() yang sudah ada untuk cleanup
+        // Mencegah duplicate results dari state yang kotor (isGameStarted, stats, dll)
+        resetSession();
+        
+        // Additional input buffer clearing untuk safety
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
         // Langsung redirect ke Credits setelah Rick Roll
         previousState = GameState::MENU_DIFFICULTY;
         currentState = GameState::CREDITS;
@@ -1445,6 +1455,16 @@ void GameEngine::showCredits() {
                 
                 // Delay singkat untuk stabilisasi
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                
+                // Additional safety reset untuk mencegah corrupt state
+                // Terutama penting setelah Hard completion flow (rickroll -> credits -> menu)
+                // Menggunakan resetSession() yang sudah ada untuk cleanup
+                resetSession();
+                
+                // Clear input buffer untuk safety
+                while (terminal.hasInput()) {
+                    terminal.getInput();
+                }
                 
                 // Kembali ke state sebelumnya
                 currentState = previousState;
