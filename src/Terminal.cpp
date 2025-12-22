@@ -62,6 +62,43 @@ void Terminal::initialize() {
 }
 
 void Terminal::cleanup() {
+    // COMPREHENSIVE TERMINAL STATE RESET
+    // Problem: ANSI state dari Rick Roll script tidak ter-reset sempurna
+    // Solution: Reset SEMUA possible ANSI attributes secara eksplisit
+    
+    // Reset ALL SGR (Select Graphic Rendition) attributes
+    std::cout << "\033[0m";              // Reset colors, bold, italic, underline, dll
+    
+    // Reset scrolling region (jika ter-set oleh script)
+    std::cout << "\033[r";               // Reset scroll region to full screen
+    
+    // Reset character sets (jika ter-change)
+    std::cout << "\033(B";               // Select default character set (ASCII)
+    
+    // Show cursor (jika hidden)
+    std::cout << "\033[?25h";            // Show cursor
+    
+    // Reset cursor style (jika ter-change)
+    std::cout << "\033[0 q";             // Reset to default cursor style
+    
+    // Clear any remaining screen content
+    std::cout << "\033[2J";              // Clear entire screen
+    std::cout << "\033[H";               // Move cursor to home (1,1)
+    
+    // Exit alternate screen buffer (kembali ke main screen)
+    std::cout << "\033[?1049l";          // Exit alternate screen
+    
+    // Reset window title (jika ter-change oleh script)
+    #ifdef _WIN32
+    std::cout << "\033]0;Windows PowerShell\007";  // Restore default title
+    #else
+    std::cout << "\033]0;Terminal\007";            // Restore default title
+    #endif
+    
+    // Force flush semua reset codes
+    std::cout.flush();
+    
+    // Restore console modes (Windows) atau termios (Linux)
 #ifdef _WIN32
     if (hStdin && hStdout) {
         // Pulihkan mode asli Windows Console
@@ -71,8 +108,10 @@ void Terminal::cleanup() {
 #else
     disableRawMode();
 #endif
-    showCursor(); // Tampilkan kembali kursor
-    flush(); // Flush terakhir saat cleanup
+    
+    // 11. Extra safety: print newline untuk memastikan terminal state normal
+    std::cout << std::endl;
+    std::cout.flush();
 }
 
 // Mengaktifkan Raw Mode (Input langsung dibaca tanpa tekan Enter, tidak ada echo otomatis)
@@ -195,7 +234,7 @@ void Terminal::showCursor() {
 }
 
 void Terminal::flush() {
-    // OPTIMIZATION CRITICAL: Fungsi ini dipanggil sekali per frame
+    // OPTIMIZATION: Fungsi ini dipanggil sekali per frame
     // Menggantikan ratusan flush() calls individual
     std::string buffered = outputBuffer.str();
     if (!buffered.empty()) {

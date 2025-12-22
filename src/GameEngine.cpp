@@ -96,10 +96,20 @@ void GameEngine::run() {
 
 /**
  * @brief Menjalankan Rick Roll easter egg sesuai platform
+ * 
+ * Tetap dalam alternate screen buffer untuk mencegah "flash" ke CLI
+ * Problem: terminal.cleanup() exit alternate screen, user lihat PowerShell sejenak
+ * Solution: Hanya disable raw mode, TETAP dalam alternate screen aplikasi
  */
 void GameEngine::playRickRoll() {
-    terminal.cleanup(); // Restore terminal normal mode
+    // JANGAN keluar dari alternate screen buffer!
+    // Hanya disable raw mode agar script bisa terima input normal
+    terminal.disableRawMode();
     terminal.showCursor();
+    
+    // Clear screen tapi TETAP dalam alternate buffer
+    std::cout << "\033[2J\033[H";
+    std::cout.flush();
     
 #ifdef _WIN32
     // Windows: Jalankan PowerShell script dari folder 'roll/'
@@ -109,7 +119,28 @@ void GameEngine::playRickRoll() {
     system("bash roll/roll.sh");
 #endif
     
-    terminal.initialize(); // Kembali ke raw mode
+    // COMPREHENSIVE terminal state reset setelah Rick Roll selesai
+    // Phase 1: Reset SEMUA SGR attributes
+    std::cout << "\033[0m";        // Reset all attributes (colors, bold, etc)
+    std::cout << "\033[r";         // Reset scroll region to full screen
+    std::cout << "\033(B";         // Reset character set to default ASCII
+    
+    // Phase 2: Clear and reposition
+    std::cout << "\033[2J";        // Clear entire screen
+    std::cout << "\033[H";         // Move cursor to home position (1,1)
+    
+    // Phase 3: Cursor control
+    std::cout << "\033[?25l";      // Hide cursor
+    std::cout << "\033[0 q";       // Reset cursor style to default
+    
+    // Phase 4: Force flush untuk memastikan semua command diterapkan
+    std::cout.flush();
+    
+    // Phase 5: Delay untuk stabilisasi terminal state
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    
+    // Phase 6: Re-enable raw mode (TANPA re-initialize yang keluar alternate screen)
+    terminal.enableRawMode();
     terminal.hideCursor();
 }
 
@@ -1046,6 +1077,9 @@ void GameEngine::processInput(char c) {
 /**
  * @brief Menampilkan layar hasil dengan statistik lengkap
  * 
+ * Ditambahkan aggressive input clearing dan safety delay sebelum
+ * Rick Roll untuk mencegah premature exit dari script eksternal.
+ * 
  * - Cek hardJustCompleted SEBELUM masuk loop rendering
  * - Setelah Rick Roll selesai, langsung redirect ke Credits
  * - Mencegah input buffer yang tertinggal dari Rick Roll
@@ -1103,16 +1137,35 @@ void GameEngine::showResults() {
         // Flush sebelum delay
         terminal.flush();
         
+        // Aggressive input buffer clearing sebelum delay
+        // Problem: Input dari gameplay masih tersisa dan akan trigger Rick Roll exit
+        // Solution: Clear semua input yang tertinggal
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
         // Delay agar user sempat membaca pesan
         std::this_thread::sleep_for(std::chrono::seconds(3));
         
-        // Jalankan Rick Roll
+        // Clear input buffer LAGI sebelum Rick Roll
+        // User mungkin menekan tombol selama delay 3 detik
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
+        // Safety delay tambahan untuk stabilisasi
+        // Memastikan tidak ada keystroke yang tertinggal di OS keyboard buffer
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        
+        // Jalankan Rick Roll dengan input buffer yang bersih
         playRickRoll();
         
         // Set flag bahwa Rick Roll sudah ditampilkan
         rickRollAlreadyShown = true;
         
-        // Clear input buffer yang mungkin tertinggal dari Rick Roll
+        // Aggressive clearing setelah Rick Roll
+        // Script mungkin meninggalkan input buffer yang kotor
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         while (terminal.hasInput()) {
             terminal.getInput();
         }
@@ -1296,6 +1349,9 @@ void GameEngine::showResults() {
 /**
  * @brief Menampilkan layar credits dengan Rick Roll easter egg
  * 
+ * Tidak keluar dari alternate screen sebelum Rick Roll
+ * untuk mencegah "flash" ke CLI sistem.
+ * 
  * - Cek flag rickRollAlreadyShown untuk mencegah Rick Roll dipanggil dua kali
  * - Jika dipanggil setelah Hard completion, skip Rick Roll (sudah ditampilkan di showResults)
  * - Jika dipanggil dari menu (tekan C), tampilkan Rick Roll
@@ -1305,9 +1361,26 @@ void GameEngine::showResults() {
 void GameEngine::showCredits() {
     // Hanya jalankan Rick Roll jika belum ditampilkan (dipanggil dari menu)
     if (!rickRollAlreadyShown) {
+        // Aggressive input clearing sebelum Rick Roll
+        // Problem: Input dari menu masih tersisa dan akan trigger Rick Roll exit
+        // Solution: Clear semua input yang tertinggal
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
+        // Safety delay untuk stabilisasi input buffer
+        // Memastikan tidak ada keystroke yang tertinggal di OS buffer
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        
+        // Clear sekali lagi untuk memastikan buffer benar-benar kosong
+        while (terminal.hasInput()) {
+            terminal.getInput();
+        }
+        
         playRickRoll();
         
         // Bersihkan semua input yang mungkin tertinggal dari Rick Roll script
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         while (terminal.hasInput()) {
             terminal.getInput();
         }
@@ -1358,6 +1431,21 @@ void GameEngine::showCredits() {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 10 || c == 13) {
+                // Simplified reset (tidak perlu cleanup+re-initialize)
+                // Karena kita tidak keluar dari alternate screen di Rick Roll
+                
+                // Clear screen dan reset attributes
+                terminal.clear();
+                
+                // Manual ANSI reset untuk safety
+                std::cout << "\033[0m";          // Reset all SGR attributes
+                std::cout << "\033[r";           // Reset scroll region
+                std::cout << "\033(B";           // Reset character set
+                std::cout.flush();
+                
+                // Delay singkat untuk stabilisasi
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                
                 // Kembali ke state sebelumnya
                 currentState = previousState;
                 return;
