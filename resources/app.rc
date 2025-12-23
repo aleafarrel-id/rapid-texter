@@ -1,0 +1,49 @@
+// ============================================================================
+// Windows Resource File untuk Rapid Texter
+// File ini menambahkan icon dan metadata ke executable Windows
+// ============================================================================
+
+#include <windows.h>
+
+// ----------------------------------------------------------------------------
+// ICON RESOURCE
+// ----------------------------------------------------------------------------
+// ID 1 adalah icon utama yang akan muncul di executable dan taskbar
+IDI_ICON1 ICON "app_icon.ico"
+
+// ----------------------------------------------------------------------------
+// VERSION INFORMATION
+// ----------------------------------------------------------------------------
+// Metadata ini akan muncul di Properties > Details
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0        // Versi file (1.0.0.0)
+ PRODUCTVERSION 1,0,0,0     // Versi produk (1.0.0.0)
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L             // Debug build
+#else
+ FILEFLAGS 0x0L             // Release build
+#endif
+ FILEOS 0x40004L            // Windows NT
+ FILETYPE 0x1L              // Application
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"   // Language: English (US), CodePage: Unicode
+        BEGIN
+            VALUE "CompanyName", "Alea Farrel\0"
+            VALUE "FileDescription", "Rapid Texter - Terminal Typing Game\0"
+            VALUE "FileVersion", "1.0.0.0\0"
+            VALUE "InternalName", "RapidTexter\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 Alea Farrel. Licensed under MIT.\0"
+            VALUE "OriginalFilename", "RapidTexter.exe\0"
+            VALUE "ProductName", "Rapid Texter\0"
+            VALUE "ProductVersion", "1.0.0.0\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200  // English (US), Unicode
+    END
+END
