@@ -52,12 +52,12 @@ Setelah proses di atas selesai, jalankan file yang muncul di folder ini:
 
 **🪟 Windows:**
 ```cmd
-rapid_texter.exe
+RapidTexter.exe
 ```
 
-**🐧 Linux / macOS:**
+**🐧 Linux:**
 ```bash
-./rapid_texter
+./RapidTexter
 ```
 
 > **Catatan:** Pastikan folder `assets/` berada di lokasi yang sama dengan aplikasi (seharusnya sudah otomatis tersedia).
@@ -67,6 +67,7 @@ rapid_texter.exe
 ```text
 rapid-texter/
 ├── assets/         # Database kata (ID, EN, Code)
+├── resources/      # Windows resource file dan icon
 ├── roll/           # File tambahan untuk fitur rahasia
 ├── include/        # Header files (.h)
 ├── src/            # Source code (.cpp)
