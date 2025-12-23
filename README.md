@@ -52,26 +52,30 @@ Setelah proses di atas selesai, jalankan file yang muncul di folder ini:
 
 **🪟 Windows:**
 ```cmd
-rapid_texter.exe
+RapidTexter.exe
 ```
 
-**🐧 Linux / macOS:**
+**🐧 Linux:**
 ```bash
-./rapid_texter
+./RapidTexter
 ```
 
-> **Catatan:** Pastikan folder `assets/` berada di lokasi yang sama dengan aplikasi (seharusnya sudah otomatis tersedia).
+> **Catatan:** Untuk membuat dalam format AppImage dapat menjalankan `create_appimage.sh`
+
+> Pastikan folder `assets/` dan `roll/` berada di lokasi yang sama dengan aplikasi (seharusnya sudah otomatis tersedia).
 
 ## 📂 Struktur Project
 
 ```text
 rapid-texter/
-├── assets/         # Database kata (ID, EN, Code)
-├── roll/           # File tambahan untuk fitur rahasia
-├── include/        # Header files (.h)
-├── src/            # Source code (.cpp)
-├── CMakeLists.txt  # Konfigurasi Build
-└── README.md       # Dokumentasi ini
+├── assets/             # Database kata (ID, EN, Code)
+├── resources/          # Windows resource file dan icon
+├── roll/               # File tambahan untuk fitur rahasia
+├── include/            # Header files (.h)
+├── src/                # Source code (.cpp)
+├── CMakeLists.txt      # Konfigurasi Build
+├── create_appimage.sh  # Script untuk membuat AppImage
+└── README.md           # Dokumentasi ini
 ```
 
 ## 📜 Lisensi
