@@ -9,14 +9,31 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Source files
 file(GLOB SOURCES "src/*.cpp")
 
-# Create executable
+# ------------------------------------------------------------------------------
+# 1. PERSIAPAN RESOURCES (Dilakukan SEBELUM add_executable)
+# ------------------------------------------------------------------------------
+if(WIN32)
+    # File ini berisi icon dan metadata
+    set(RESOURCE_FILE "${CMAKE_SOURCE_DIR}/resources/app.rc")
+    
+    if(EXISTS ${RESOURCE_FILE})
+        message(STATUS "Adding Windows resource file: ${RESOURCE_FILE}")
+        # Tambahkan file .rc ke dalam list SOURCES agar ikut dicompile
+        list(APPEND SOURCES ${RESOURCE_FILE})
+    else()
+        message(WARNING "Resource file not found: ${RESOURCE_FILE}")
+    endif()
+endif()
+
+# ------------------------------------------------------------------------------
+# 2. PEMBUATAN TARGET (PENTING: Harus di sini)
+# ------------------------------------------------------------------------------
+# Kita membuat 'mobil'-nya dulu di sini, baru bisa dimodifikasi di bawahnya
 add_executable(RapidTexter ${SOURCES})
 
 # ------------------------------------------------------------------------------
-# KONFIGURASI PLATFORM (OS)
+# 3. KONFIGURASI LINKING & LIBRARY (Dilakukan SETELAH add_executable)
 # ------------------------------------------------------------------------------
-
-# 1. WINDOWS
 if(WIN32)
     # Jika menggunakan MinGW/GCC/Clang, gunakan Static Linking agar portable
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -27,18 +44,16 @@ if(WIN32)
         )
     endif()
     
-    # PENTING: Link library multimedia Windows (winmm) untuk fungsi PlaySound
-    target_link_libraries(RapidTexter PRIVATE -static -lwinmm)
-    
-# 2. LINUX / UNIX
+    # Link library multimedia Windows
+    target_link_libraries(RapidTexter PRIVATE winmm)
+
 elseif(UNIX AND NOT APPLE)
-    # Di Linux, kita perlu mencari dan me-link library Threads (pthread) secara eksplisit
     find_package(Threads REQUIRED)
     target_link_libraries(RapidTexter PRIVATE Threads::Threads)
 endif()
 
 # ------------------------------------------------------------------------------
-# COPY ASSETS (Berjalan di semua OS)
+# 4. COPY ASSETS
 # ------------------------------------------------------------------------------
 
 # Copy assets directory
@@ -55,4 +70,12 @@ add_custom_command(TARGET RapidTexter POST_BUILD
     ${CMAKE_SOURCE_DIR}/roll
     $<TARGET_FILE_DIR:RapidTexter>/roll
     COMMENT "Copying roll directory..."
+)
+
+# Copy resources directory (opsional, untuk distribusi)
+add_custom_command(TARGET RapidTexter POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/resources
+    $<TARGET_FILE_DIR:RapidTexter>/resources
+    COMMENT "Copying resources directory..."
 )
