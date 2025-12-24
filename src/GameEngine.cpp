@@ -37,6 +37,13 @@ GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE), previousState
     unlockedDifficulties[Difficulty::MEDIUM] = false;      // ✗ Butuh: 40 WPM, 80% Akurasi (Easy)
     unlockedDifficulties[Difficulty::HARD] = false;        // ✗ Butuh: 60 WPM, 90% Akurasi (Medium)
     unlockedDifficulties[Difficulty::PROGRAMMER] = true;   // ✓ Bonus (selalu terbuka)
+
+    // Inisialisasi status penyelesaian level
+    completedDifficulties[Difficulty::EASY] = false;       // Belum pernah diselesaikan
+    completedDifficulties[Difficulty::MEDIUM] = false;
+    completedDifficulties[Difficulty::HARD] = false;
+    completedDifficulties[Difficulty::PROGRAMMER] = false;
+
     hardCompleted = false;                                 // Hard belum pernah diselesaikan
     rickRollAlreadyShown = false;                          // Rick Roll belum ditampilkan
     
@@ -683,23 +690,59 @@ void GameEngine::handleMenuDifficulty() {
             bool mediumUnlocked = unlockedDifficulties[Difficulty::MEDIUM];
             bool hardUnlocked = unlockedDifficulties[Difficulty::HARD];
 
-            std::string easyText = easyUnlocked ? "[1] Easy" : "[1] Easy [LOCKED]";
-            std::string mediumText = mediumUnlocked ? "[2] Medium" : "[2] Medium [LOCKED]";
-            std::string hardText = hardUnlocked ? "[3] Hard" : "[3] Hard [LOCKED]";
+            // Build text dengan completion indicator
+            std::string easyText = "[1] Easy";
+            if (!easyUnlocked) {
+                easyText += " [LOCKED]";
+            } else if (completedDifficulties[Difficulty::EASY]) {
+                easyText += " [PASSED]";  // Checkmark untuk completed
+            }
 
-            Color cE = easyUnlocked ? Color::WHITE : Color::RED;
-            Color cM = mediumUnlocked ? Color::WHITE : Color::RED;
-            Color cH = hardUnlocked ? Color::WHITE : Color::RED;
+            std::string mediumText = "[2] Medium";
+            if (!mediumUnlocked) {
+                mediumText += " [LOCKED]";
+            } else if (completedDifficulties[Difficulty::MEDIUM]) {
+                mediumText += " [PASSED]";
+            }
+
+            std::string hardText = "[3] Hard";
+            if (!hardUnlocked) {
+                hardText += " [LOCKED]";
+            } else if (completedDifficulties[Difficulty::HARD]) {
+                hardText += " [PASSED]";
+            }
+
+            // Tentukan warna berdasarkan status unlock dan completion
+            Color cE = !easyUnlocked ? Color::RED : 
+                    (completedDifficulties[Difficulty::EASY] ? Color::GREEN : Color::WHITE);
+            Color cM = !mediumUnlocked ? Color::RED : 
+                    (completedDifficulties[Difficulty::MEDIUM] ? Color::GREEN : Color::WHITE);
+            Color cH = !hardUnlocked ? Color::RED : 
+                    (completedDifficulties[Difficulty::HARD] ? Color::GREEN : Color::WHITE);
 
             printCentered(cy - 5, easyText, cE);
             printCentered(cy - 4, mediumText, cM);
             printCentered(cy - 3, hardText, cH);
             printCentered(cy - 1, "[4] Programmer Mode", Color::CYAN);
+
+            bool allLevelsCompleted = completedDifficulties[Difficulty::EASY] &&
+                                      completedDifficulties[Difficulty::MEDIUM] &&
+                                      completedDifficulties[Difficulty::HARD];
             
-            printCentered(cy + 2, "Requirements:", Color::YELLOW);
-            printCentered(cy + 3, "Easy -> Medium: 40 WPM, 80% Accuracy");
-            printCentered(cy + 4, "Medium -> Hard: 60 WPM, 90% Accuracy");
-            printCentered(cy + 5, "Hard Complete: 70 WPM, 90% Accuracy");
+            if (allLevelsCompleted) {
+                // Tampilan untuk yang sudah tamat
+                printCentered(cy + 1, "================================", Color::GREEN);
+                printCentered(cy + 2, "CONGRATULATIONS!", Color::GREEN);
+                printCentered(cy + 3, "You have completed all levels!", Color::WHITE);
+                printCentered(cy + 4, "================================", Color::GREEN);
+                printCentered(cy + 5, "Try Programmer Mode for extra challenge!", Color::CYAN);
+            } else {
+                // Tampilan requirements normal (belum tamat)
+                printCentered(cy + 2, "Requirements:", Color::YELLOW);
+                printCentered(cy + 3, "Easy -> Medium: 40 WPM, 80% Accuracy");
+                printCentered(cy + 4, "Medium -> Hard: 60 WPM, 90% Accuracy");
+                printCentered(cy + 5, "Hard Complete: 70 WPM, 90% Accuracy");
+            }
             
             printCentered(cy + 7, "(B) Back | (C) Credits", Color::YELLOW);
             drawStatusBar();
@@ -1110,6 +1153,7 @@ void GameEngine::showResults() {
                 hardCompleted = true;
                 shouldShowRickRoll = true;
                 hardJustCompleted = true;
+                completedDifficulties[Difficulty::HARD] = true;
             }
         }
     }
@@ -1271,6 +1315,7 @@ void GameEngine::showResults() {
                         msg = "LEVEL PASSED! Medium Unlocked!";
                         msgColor = Color::GREEN;
                         unlockedDifficulties[Difficulty::MEDIUM] = true;
+                        completedDifficulties[Difficulty::EASY] = true; // Tandai sebagai complete
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
@@ -1283,6 +1328,7 @@ void GameEngine::showResults() {
                         msg = "LEVEL PASSED! Hard Unlocked!";
                         msgColor = Color::GREEN;
                         unlockedDifficulties[Difficulty::HARD] = true;
+                        completedDifficulties[Difficulty::MEDIUM] = true; // Tandai sebagai complete
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
@@ -1296,6 +1342,7 @@ void GameEngine::showResults() {
                             msg = "HARD MODE PASSED!";
                             msgColor = Color::GREEN;
                         }
+                        completedDifficulties[Difficulty::HARD] = true; // Tandai sebagai complete
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
