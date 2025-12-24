@@ -5,6 +5,21 @@
 #include <random>
 #include <ctime>
 
+namespace {
+    // Helper function untuk membersihkan karakter non-ASCII
+    std::string sanitizeWord(const std::string& word) {
+        std::string cleaned;
+        cleaned.reserve(word.length());
+        for (char c : word) {
+            // Hanya terima karakter ASCII printable (32-126)
+            if (c >= 32 && c <= 126) {
+                cleaned += c;
+            }
+        }
+        return cleaned;
+    }
+}
+
 TextProvider::TextProvider() {
     // Seed random number generator saat inisialisasi
     std::srand(std::time(nullptr));
@@ -23,7 +38,10 @@ bool TextProvider::loadWords(const std::string& language, const std::string& fil
     // Baca kata per kata (dipisahkan spasi/newline)
     while (file >> word) {
         if (!word.empty()) {
-            words.push_back(word);
+            std::string cleaned = sanitizeWord(word);
+            if (!cleaned.empty()) {  // Pastikan masih ada isi setelah cleaning
+                words.push_back(cleaned);
+            }
         }
     }
     

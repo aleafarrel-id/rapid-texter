@@ -109,6 +109,7 @@ private:
      */
     std::map<Difficulty, bool> unlockedDifficulties; 
     bool hardCompleted;             ///< Flag untuk tracking apakah Hard sudah diselesaikan
+    std::map<Difficulty, bool> completedDifficulties; ///< Tracking level yang sudah diselesaikan
     bool rickRollAlreadyShown;      ///< Flag untuk mencegah Rick Roll dipanggil dua kali berturut-turut
     
     // ========================================================================
