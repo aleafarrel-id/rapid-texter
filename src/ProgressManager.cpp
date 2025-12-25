@@ -9,8 +9,72 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cstdlib>  // untuk getenv
+#include <sys/stat.h>  // untuk stat
 
-ProgressManager::ProgressManager() : filename("progress.json") {
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>  // untuk SHGetFolderPath
+#include <direct.h>  // untuk _mkdir
+#endif
+
+// Helper function untuk membuat directory jika belum ada
+static bool ensureDirectoryExists(const std::string& path) {
+#ifdef _WIN32
+    // Windows: gunakan _mkdir
+    struct _stat st;
+    if (_stat(path.c_str(), &st) != 0) {
+        return _mkdir(path.c_str()) == 0;
+    }
+    return (st.st_mode & _S_IFDIR) != 0;
+#else
+    // Linux/macOS: gunakan mkdir
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        return mkdir(path.c_str(), 0755) == 0;
+    }
+    return S_ISDIR(st.st_mode);
+#endif
+}
+
+// Helper function untuk mendapatkan path data directory
+static std::string getDataDirectory() {
+#ifdef _WIN32
+    // Windows: gunakan %APPDATA%
+    char appDataPath[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, appDataPath))) {
+        std::string dataDir = std::string(appDataPath) + "\\RapidTexter";
+        ensureDirectoryExists(dataDir);
+        return dataDir + "\\";
+    }
+    // Fallback ke current directory
+    return "";
+#else
+    // Linux: gunakan XDG_DATA_HOME atau ~/.local/share
+    const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+    std::string baseDir;
+    
+    if (xdgDataHome && xdgDataHome[0] != '\0') {
+        baseDir = std::string(xdgDataHome);
+    } else {
+        const char* home = std::getenv("HOME");
+        if (home) {
+            baseDir = std::string(home) + "/.local/share";
+        } else {
+            // Fallback ke current directory
+            return "";
+        }
+    }
+    
+    // Buat directory jika belum ada
+    ensureDirectoryExists(baseDir);
+    std::string dataDir = baseDir + "/RapidTexter";
+    ensureDirectoryExists(dataDir);
+    return dataDir + "/";
+#endif
+}
+
+ProgressManager::ProgressManager() : filename(getDataDirectory() + "progress.json") {
     // Initialize default progress HANYA untuk bahasa sebenarnya (id, en)
     progressData["id"] = LanguageProgress();
     progressData["en"] = LanguageProgress();
