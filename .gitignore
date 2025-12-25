@@ -8,7 +8,8 @@ CMakeCache.txt
 rapid_texter.exe
 rapid_texter
 RapidTexter.exe
-RapidTexter
+RapidTexter*
+progress.json
 Makefile
 *.log
 *.obj

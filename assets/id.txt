@@ -404,7 +404,6 @@ lapangan
 sisanya
 benar
 mampu
-pound
 dilakukan
 kecantikan
 berkendara
@@ -854,7 +853,6 @@ gerak
 cair
 login
 berarti
-quotient
 gigi
 leher
 oksigen
@@ -947,7 +945,7 @@ luas
 mempersiapkan
 garam
 hidung
-plural
+jamak
 kemarahan
 klaim
 benua
