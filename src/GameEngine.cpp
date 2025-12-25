@@ -668,7 +668,7 @@ void GameEngine::handleMenuDifficulty() {
             int cx = w / 2;
 
             int boxW = 60;
-            int boxH = 22;
+            int boxH = 24;
             drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
             printCentered(cy - 9, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
@@ -716,14 +716,8 @@ void GameEngine::handleMenuDifficulty() {
             Color progColor = Color::CYAN;
 
             // Check jika Programmer sudah completed di bahasa saat ini
-            bool progCompleted = false;
-            if (currentLanguage == "prog") {
-                progCompleted = progressManager.isCompleted("prog", Difficulty::PROGRAMMER);
-            } else if (currentLanguage == "id") {
-                progCompleted = progressManager.isCompleted("id", Difficulty::PROGRAMMER);
-            } else if (currentLanguage == "en") {
-                progCompleted = progressManager.isCompleted("en", Difficulty::PROGRAMMER);
-            }
+            // Langsung cek di currentLanguage
+            bool progCompleted = progressManager.isCompleted(currentLanguage, Difficulty::PROGRAMMER);
 
             if (progCompleted) {
                 progText += " [CERTIFIED]";
@@ -803,11 +797,10 @@ void GameEngine::handleMenuDifficulty() {
             // Hanya bisa Reset Progress (jika sudah selesai Hard)
             if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)) {
                 if (d == 'r' || d == 'R') {
-                if (showResetConfirmation()) {
-                    lastW = 0; // Force redraw
+                    showResetConfirmation();
+                    lastW = 0; // Force redraw SELALU, baik Y atau N
+                    continue;
                 }
-                continue;
-            }
             }
             
 
@@ -1401,16 +1394,10 @@ void GameEngine::showResults() {
                 else if (currentDifficulty == Difficulty::PROGRAMMER) {
                     requirement = "Need: 50 WPM, 90% Accuracy";
                     
-                    // Cek syarat sertifikasi
                     if (currentStats.wpm >= 50 && currentStats.accuracy >= 90) {
-                        std::string langToSave = currentLanguage;
-                        if (currentLanguage == "prog") {
-                            langToSave = "prog";
-                        } else if (originalLanguage == "id") {
-                            langToSave = "id";
-                        } else if (originalLanguage == "en") {
-                            langToSave = "en";
-                        }
+                        // Langsung gunakan originalLanguage untuk menentukan bahasa mana yang harus disave
+                        // originalLanguage berisi "id" atau "en" yang dipilih user di awal
+                        std::string langToSave = originalLanguage;
                         
                         // Cek apakah sudah pernah certified sebelumnya
                         bool alreadyCertified = progressManager.isCompleted(langToSave, Difficulty::PROGRAMMER);
@@ -1423,12 +1410,12 @@ void GameEngine::showResults() {
                             msgColor = Color::CYAN;
                         }
 
-                        // Simpan status sertifikasi
+                        // Simpan status sertifikasi KE BAHASA ASLI (id/en), BUKAN ke "prog"
                         pass = true;
                         progressManager.setCompleted(langToSave, Difficulty::PROGRAMMER, true);
                         progressManager.saveProgress();
                     } else {
-                        msg = "CERTIFICATION FAILED"; // Gagal sertifikasi
+                        msg = "CERTIFICATION FAILED";
                         msgColor = Color::RED;
                     }
                 }

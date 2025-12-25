@@ -11,10 +11,9 @@
 #include <iostream>
 
 ProgressManager::ProgressManager() : filename("progress.json") {
-    // Initialize default progress untuk semua bahasa
+    // Initialize default progress HANYA untuk bahasa sebenarnya (id, en)
     progressData["id"] = LanguageProgress();
     progressData["en"] = LanguageProgress();
-    progressData["prog"] = LanguageProgress();
     
     // Load existing progress jika ada
     loadProgress();
@@ -97,6 +96,7 @@ bool ProgressManager::loadProgress() {
     return true;
 }
 
+// Save progress ke file JSON
 bool ProgressManager::saveProgress() {
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -104,14 +104,13 @@ bool ProgressManager::saveProgress() {
         return false;
     }
     
-    // Write JSON dengan indentation manual
     file << "{\n";
     file << "  \"languages\": {\n";
     
-    // Array bahasa untuk iterasi dengan comma handling
-    std::string languages[] = {"id", "en", "prog"};
+    // Array bahasa HANYA id dan en (programmer bukan bahasa sebenarnya melainkan mode)
+    std::string languages[] = {"id", "en"};
     
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 2; ++i) {  // Loop hanya 2 kali
         const std::string& lang = languages[i];
         const auto& progress = progressData[lang];
         
@@ -132,7 +131,7 @@ bool ProgressManager::saveProgress() {
         // Hard completed flag
         file << "      \"hard_completed_ever\": " << (progress.hardCompletedEver ? "true" : "false") << "\n";
         
-        file << "    }" << (i < 2 ? "," : "") << "\n";
+        file << "    }" << (i < 1 ? "," : "") << "\n";  // i < 1 karena hanya 2 item
     }
     
     file << "  }\n";
@@ -143,15 +142,11 @@ bool ProgressManager::saveProgress() {
 }
 
 bool ProgressManager::resetProgress() {
-    // Reset ke default values
+    // Reset kedua bahasa ke default
     progressData["id"] = LanguageProgress();
     progressData["en"] = LanguageProgress();
-    progressData["prog"] = LanguageProgress();
     
-    // Delete file (atau save default)
     std::remove(filename.c_str());
-    
-    // Save fresh progress file
     return saveProgress();
 }
 
