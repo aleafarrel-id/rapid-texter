@@ -60,6 +60,8 @@ RapidTexter.exe
 ./RapidTexter
 ```
 
+Atau bisa download aplikasi jadi untuk keduanya dari **Release**
+
 > **Catatan:** Untuk membuat dalam format AppImage dapat menjalankan `create_appimage.sh`
 
 > Pastikan folder `assets/` dan `roll/` berada di lokasi yang sama dengan aplikasi (seharusnya sudah otomatis tersedia).
@@ -75,6 +77,7 @@ rapid-texter/
 ├── src/                # Source code (.cpp)
 ├── CMakeLists.txt      # Konfigurasi Build
 ├── create_appimage.sh  # Script untuk membuat AppImage
+├── make_installer.nsi  # Script untuk membuat installer Windows
 └── README.md           # Dokumentasi ini
 ```
 
