@@ -44,8 +44,8 @@ if(WIN32)
         )
     endif()
     
-    # Link library multimedia Windows
-    target_link_libraries(RapidTexter PRIVATE winmm)
+    # Link library multimedia Windows dan Shell32 untuk path access
+    target_link_libraries(RapidTexter PRIVATE winmm Shell32)
 
 elseif(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)

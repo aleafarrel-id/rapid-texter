@@ -767,7 +767,8 @@ void GameEngine::handleMenuDifficulty() {
 
             
             printCentered(cy + 8, "(B) Back | (C) Credits", Color::YELLOW);
-            if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)){
+            // Reset progress hanya muncul jika Easy sudah selesai
+            if (progressManager.isCompleted(currentLanguage, Difficulty::EASY)){
                 printCentered(cy + 9, "(R) Reset Progress", Color::RED);
             }
 
@@ -794,8 +795,8 @@ void GameEngine::handleMenuDifficulty() {
                 return;
             }
 
-            // Hanya bisa Reset Progress (jika sudah selesai Hard)
-            if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)) {
+            // Hanya bisa Reset Progress (jika sudah selesai Easy)
+            if (progressManager.isCompleted(currentLanguage, Difficulty::EASY)) {
                 if (d == 'r' || d == 'R') {
                     showResetConfirmation();
                     lastW = 0; // Force redraw SELALU, baik Y atau N
@@ -1633,7 +1634,7 @@ bool GameEngine::showResetConfirmation() {
             printCentered(cy - 6, "!!! WARNING !!!", Color::RED);
             printCentered(cy - 4, "Reset Progress", Color::YELLOW);
             printCentered(cy - 2, "This will DELETE all campaign progress");
-            printCentered(cy - 1, "in ALL languages (ID, EN, Programmer)");
+            printCentered(cy - 1, "in ALL languages and difficulties");
             printCentered(cy + 1, "This action CANNOT be undone!", Color::RED);
             printCentered(cy + 4, "[Y] Yes, Reset Everything", Color::RED);
             printCentered(cy + 5, "[N] No, Cancel", Color::GREEN);
@@ -1662,7 +1663,7 @@ bool GameEngine::showResetConfirmation() {
                 return true;
             }
             
-            if (c == 'n' || c == 'N' || c == 27) {
+            if (c == 'n' || c == 'N') {
                 terminal.clear();
                 terminal.flush();
                 return false;
