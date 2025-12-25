@@ -14,6 +14,7 @@
 #include "Terminal.h"
 #include "TextProvider.h"
 #include "Stats.h"
+#include "ProgressManager.h"
 #include <string>
 #include <vector>
 #include <chrono>
@@ -77,6 +78,7 @@ private:
     
     Terminal terminal;              ///< Handler untuk operasi terminal (I/O, colors, cursor)
     TextProvider textProvider;      ///< Provider untuk database kata-kata
+    ProgressManager progressManager;///< Manager untuk penyimpanan progress campaign
     GameState currentState;         ///< State aktif saat ini dalam State Machine
     GameState previousState;        ///< State sebelumnya (untuk kembali dari credits)
     
@@ -107,9 +109,6 @@ private:
      * - Hard: Unlock dengan 60 WPM + 90% accuracy di Medium
      * - Programmer: Selalu unlocked (bonus mode)
      */
-    std::map<Difficulty, bool> unlockedDifficulties; 
-    bool hardCompleted;             ///< Flag untuk tracking apakah Hard sudah diselesaikan
-    std::map<Difficulty, bool> completedDifficulties; ///< Tracking level yang sudah diselesaikan
     bool rickRollAlreadyShown;      ///< Flag untuk mencegah Rick Roll dipanggil dua kali berturut-turut
     
     // ========================================================================
@@ -196,6 +195,12 @@ private:
      * setelah selesai atau keluar dari Programmer Mode
      */
     void restoreLanguageFromProgrammerMode();
+
+    /**
+     * @brief Menampilkan konfirmasi reset progress dengan warning
+     * @return true jika user konfirmasi reset, false jika cancel
+     */
+    bool showResetConfirmation();
     
     // ========================================================================
     // PRIVATE METHODS - UI Helpers

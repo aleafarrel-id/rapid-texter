@@ -32,20 +32,8 @@
 GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE), previousState(GameState::MENU_LANGUAGE) {
     terminal.initialize();
     
-    // Setup unlock status untuk Campaign Mode
-    unlockedDifficulties[Difficulty::EASY] = true;         // ✓ Terbuka dari awal
-    unlockedDifficulties[Difficulty::MEDIUM] = false;      // ✗ Butuh: 40 WPM, 80% Akurasi (Easy)
-    unlockedDifficulties[Difficulty::HARD] = false;        // ✗ Butuh: 60 WPM, 90% Akurasi (Medium)
-    unlockedDifficulties[Difficulty::PROGRAMMER] = true;   // ✓ Bonus (selalu terbuka)
-
-    // Inisialisasi status penyelesaian level
-    completedDifficulties[Difficulty::EASY] = false;       // Belum pernah diselesaikan
-    completedDifficulties[Difficulty::MEDIUM] = false;
-    completedDifficulties[Difficulty::HARD] = false;
-    completedDifficulties[Difficulty::PROGRAMMER] = false;
-
-    hardCompleted = false;                                 // Hard belum pernah diselesaikan
-    rickRollAlreadyShown = false;                          // Rick Roll belum ditampilkan
+    // Rick Roll sudah ditampilkan atau belum
+    rickRollAlreadyShown = false;
     
     // Load word databases
     textProvider.loadWords("id", "assets/id.txt");
@@ -680,71 +668,109 @@ void GameEngine::handleMenuDifficulty() {
             int cx = w / 2;
 
             int boxW = 60;
-            int boxH = 20;
+            int boxH = 24;
             drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
-            printCentered(cy - 8, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
+            printCentered(cy - 9, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
 
             // Status lock dan persyaratan
-            bool easyUnlocked = unlockedDifficulties[Difficulty::EASY];
-            bool mediumUnlocked = unlockedDifficulties[Difficulty::MEDIUM];
-            bool hardUnlocked = unlockedDifficulties[Difficulty::HARD];
+            bool easyUnlocked = progressManager.isUnlocked(currentLanguage, Difficulty::EASY);
+            bool mediumUnlocked = progressManager.isUnlocked(currentLanguage, Difficulty::MEDIUM);
+            bool hardUnlocked = progressManager.isUnlocked(currentLanguage, Difficulty::HARD);
 
             // Build text dengan completion indicator
             std::string easyText = "[1] Easy";
             if (!easyUnlocked) {
                 easyText += " [LOCKED]";
-            } else if (completedDifficulties[Difficulty::EASY]) {
-                easyText += " [PASSED]";  // Checkmark untuk completed
+            } else if (progressManager.isCompleted(currentLanguage, Difficulty::EASY)) {
+                easyText += " [PASSED]";
             }
 
             std::string mediumText = "[2] Medium";
             if (!mediumUnlocked) {
                 mediumText += " [LOCKED]";
-            } else if (completedDifficulties[Difficulty::MEDIUM]) {
+            } else if (progressManager.isCompleted(currentLanguage, Difficulty::MEDIUM)) {
                 mediumText += " [PASSED]";
             }
 
             std::string hardText = "[3] Hard";
             if (!hardUnlocked) {
                 hardText += " [LOCKED]";
-            } else if (completedDifficulties[Difficulty::HARD]) {
+            } else if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)) {
                 hardText += " [PASSED]";
             }
 
             // Tentukan warna berdasarkan status unlock dan completion
             Color cE = !easyUnlocked ? Color::RED : 
-                    (completedDifficulties[Difficulty::EASY] ? Color::GREEN : Color::WHITE);
+                    (progressManager.isCompleted(currentLanguage, Difficulty::EASY) ? Color::GREEN : Color::WHITE);
             Color cM = !mediumUnlocked ? Color::RED : 
-                    (completedDifficulties[Difficulty::MEDIUM] ? Color::GREEN : Color::WHITE);
+                    (progressManager.isCompleted(currentLanguage, Difficulty::MEDIUM) ? Color::GREEN : Color::WHITE);
             Color cH = !hardUnlocked ? Color::RED : 
-                    (completedDifficulties[Difficulty::HARD] ? Color::GREEN : Color::WHITE);
+                    (progressManager.isCompleted(currentLanguage, Difficulty::HARD) ? Color::GREEN : Color::WHITE);
 
-            printCentered(cy - 5, easyText, cE);
-            printCentered(cy - 4, mediumText, cM);
-            printCentered(cy - 3, hardText, cH);
-            printCentered(cy - 1, "[4] Programmer Mode", Color::CYAN);
-
-            bool allLevelsCompleted = completedDifficulties[Difficulty::EASY] &&
-                                      completedDifficulties[Difficulty::MEDIUM] &&
-                                      completedDifficulties[Difficulty::HARD];
+            printCentered(cy - 6, easyText, cE);
+            printCentered(cy - 5, mediumText, cM);
+            printCentered(cy - 4, hardText, cH);
             
-            if (allLevelsCompleted) {
-                // Tampilan untuk yang sudah tamat
+            std::string progText = "[4] Programmer Mode";
+            Color progColor = Color::CYAN;
+
+            // Check jika Programmer sudah completed di bahasa saat ini
+            // Langsung cek di currentLanguage
+            bool progCompleted = progressManager.isCompleted(currentLanguage, Difficulty::PROGRAMMER);
+
+            if (progCompleted) {
+                progText += " [CERTIFIED]";
+                progColor = Color::GREEN;
+            }
+
+            printCentered(cy - 2, progText, progColor);
+
+            // Tampilkan banner berdasarkan progress
+            bool mainLevelsCompleted = progressManager.isCompleted(currentLanguage, Difficulty::EASY) &&
+                           progressManager.isCompleted(currentLanguage, Difficulty::MEDIUM) &&
+                           progressManager.isCompleted(currentLanguage, Difficulty::HARD);
+
+            // Cek Programmer Certification
+            bool programmerCertified = false;
+            if (currentLanguage == "prog") {
+                programmerCertified = progressManager.isCompleted("prog", Difficulty::PROGRAMMER);
+            } else if (currentLanguage == "id") {
+                programmerCertified = progressManager.isCompleted("id", Difficulty::PROGRAMMER);
+            } else if (currentLanguage == "en") {
+                programmerCertified = progressManager.isCompleted("en", Difficulty::PROGRAMMER);
+            }
+
+            // Show banner sesuai status
+            // Banner logic: Priority untuk Programmer Certification
+            if (programmerCertified) {
+                printCentered(cy + 1, "================================", Color::CYAN);
+                printCentered(cy + 2, "PROGRAMMER CERTIFIED!", Color::CYAN);
+                printCentered(cy + 3, "You are now a certified programmer!", Color::WHITE);
+                printCentered(cy + 4, "Master of syntax and speed!", Color::GREEN);
+                printCentered(cy + 5, "================================", Color::CYAN);
+            }
+            else if (mainLevelsCompleted) {
                 printCentered(cy + 1, "================================", Color::GREEN);
                 printCentered(cy + 2, "CONGRATULATIONS!", Color::GREEN);
                 printCentered(cy + 3, "You have completed all levels!", Color::WHITE);
                 printCentered(cy + 4, "================================", Color::GREEN);
-                printCentered(cy + 5, "Try Programmer Mode for extra challenge!", Color::CYAN);
-            } else {
-                // Tampilan requirements normal (belum tamat)
-                printCentered(cy + 2, "Requirements:", Color::YELLOW);
-                printCentered(cy + 3, "Easy -> Medium: 40 WPM, 80% Accuracy");
-                printCentered(cy + 4, "Medium -> Hard: 60 WPM, 90% Accuracy");
-                printCentered(cy + 5, "Hard Complete: 70 WPM, 90% Accuracy");
+                printCentered(cy + 5, "Try Programmer Mode to get certified!", Color::CYAN);
+            } 
+            else {
+                printCentered(cy + 1, "Requirements:", Color::YELLOW);
+                printCentered(cy + 2, "Easy -> Medium: 40 WPM, 80% Accuracy");
+                printCentered(cy + 3, "Medium -> Hard: 60 WPM, 90% Accuracy");
+                printCentered(cy + 4, "Hard Complete: 70 WPM, 90% Accuracy");
+                printCentered(cy + 5, "Programmer Cert: 50 WPM, 90% Accuracy", Color::CYAN);
             }
+
             
-            printCentered(cy + 7, "(B) Back | (C) Credits", Color::YELLOW);
+            printCentered(cy + 8, "(B) Back | (C) Credits", Color::YELLOW);
+            if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)){
+                printCentered(cy + 9, "(R) Reset Progress", Color::RED);
+            }
+
             drawStatusBar();
             
             // Flush setelah rendering selesai
@@ -768,16 +794,26 @@ void GameEngine::handleMenuDifficulty() {
                 return;
             }
 
+            // Hanya bisa Reset Progress (jika sudah selesai Hard)
+            if (progressManager.isCompleted(currentLanguage, Difficulty::HARD)) {
+                if (d == 'r' || d == 'R') {
+                    showResetConfirmation();
+                    lastW = 0; // Force redraw SELALU, baik Y atau N
+                    continue;
+                }
+            }
+            
+
             bool valid = false;
-            if (d == '1' && unlockedDifficulties[Difficulty::EASY]) { 
+            if (d == '1' && progressManager.isUnlocked(currentLanguage, Difficulty::EASY)) { 
                 currentDifficulty = Difficulty::EASY; 
                 valid = true; 
             }
-            if (d == '2' && unlockedDifficulties[Difficulty::MEDIUM]) { 
+            if (d == '2' && progressManager.isUnlocked(currentLanguage, Difficulty::MEDIUM)) { 
                 currentDifficulty = Difficulty::MEDIUM; 
                 valid = true; 
             }
-            if (d == '3' && unlockedDifficulties[Difficulty::HARD]) { 
+            if (d == '3' && progressManager.isUnlocked(currentLanguage, Difficulty::HARD)) { 
                 currentDifficulty = Difficulty::HARD; 
                 valid = true; 
             }
@@ -1149,12 +1185,15 @@ void GameEngine::showResults() {
     // Cek apakah ini pertama kali menyelesaikan Hard mode
     if (currentMode == "campaign" && currentDifficulty == Difficulty::HARD) {
         if (currentStats.wpm >= 70 && currentStats.accuracy >= 90) {
-            if (!hardCompleted) {
-                hardCompleted = true;
+            // Check apakah ini PERTAMA KALI complete hard di bahasa ini
+            if (!progressManager.wasHardCompletedBefore(currentLanguage)) {
                 shouldShowRickRoll = true;
                 hardJustCompleted = true;
-                completedDifficulties[Difficulty::HARD] = true;
+                progressManager.markHardCompleted(currentLanguage);
             }
+            // Mark sebagai completed (bisa berkali-kali)
+            progressManager.setCompleted(currentLanguage, Difficulty::HARD, true);
+            progressManager.saveProgress(); // SAVE setelah update
         }
     }
 
@@ -1314,8 +1353,9 @@ void GameEngine::showResults() {
                         pass = true;
                         msg = "LEVEL PASSED! Medium Unlocked!";
                         msgColor = Color::GREEN;
-                        unlockedDifficulties[Difficulty::MEDIUM] = true;
-                        completedDifficulties[Difficulty::EASY] = true; // Tandai sebagai complete
+                        progressManager.setUnlocked(currentLanguage, Difficulty::MEDIUM, true);
+                        progressManager.setCompleted(currentLanguage, Difficulty::EASY, true);
+                        progressManager.saveProgress(); // SAVE setelah update
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
@@ -1327,8 +1367,9 @@ void GameEngine::showResults() {
                         pass = true;
                         msg = "LEVEL PASSED! Hard Unlocked!";
                         msgColor = Color::GREEN;
-                        unlockedDifficulties[Difficulty::HARD] = true;
-                        completedDifficulties[Difficulty::MEDIUM] = true; // Tandai sebagai complete
+                        progressManager.setUnlocked(currentLanguage, Difficulty::HARD, true);
+                        progressManager.setCompleted(currentLanguage, Difficulty::MEDIUM, true);
+                        progressManager.saveProgress(); // SAVE setelah update
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
@@ -1338,19 +1379,45 @@ void GameEngine::showResults() {
                     requirement = "Need: 70 WPM, 90% Accuracy";
                     if (currentStats.wpm >= 70 && currentStats.accuracy >= 90) {
                         // Jika sudah pernah complete sebelumnya
-                        if (hardCompleted) {
+                        if (progressManager.wasHardCompletedBefore(currentLanguage)) {
                             msg = "HARD MODE PASSED!";
                             msgColor = Color::GREEN;
                         }
-                        completedDifficulties[Difficulty::HARD] = true; // Tandai sebagai complete
+                        progressManager.setCompleted(currentLanguage, Difficulty::HARD, true);
+                        progressManager.saveProgress(); // SAVE
                     } else {
                         msg = "LEVEL FAILED";
                         msgColor = Color::RED;
                     }
                 }
+                // Programmer Mode
                 else if (currentDifficulty == Difficulty::PROGRAMMER) {
-                    msg = "Programmer Mode Completed!";
-                    msgColor = Color::CYAN;
+                    requirement = "Need: 50 WPM, 90% Accuracy";
+                    
+                    if (currentStats.wpm >= 50 && currentStats.accuracy >= 90) {
+                        // Langsung gunakan originalLanguage untuk menentukan bahasa mana yang harus disave
+                        // originalLanguage berisi "id" atau "en" yang dipilih user di awal
+                        std::string langToSave = originalLanguage;
+                        
+                        // Cek apakah sudah pernah certified sebelumnya
+                        bool alreadyCertified = progressManager.isCompleted(langToSave, Difficulty::PROGRAMMER);
+                        
+                        if (alreadyCertified) {
+                            msg = "PROGRAMMER CERTIFIED!";
+                            msgColor = Color::CYAN;
+                        } else {
+                            msg = "YOU ARE NOW A CERTIFIED PROGRAMMER!";
+                            msgColor = Color::CYAN;
+                        }
+
+                        // Simpan status sertifikasi KE BAHASA ASLI (id/en), BUKAN ke "prog"
+                        pass = true;
+                        progressManager.setCompleted(langToSave, Difficulty::PROGRAMMER, true);
+                        progressManager.saveProgress();
+                    } else {
+                        msg = "CERTIFICATION FAILED";
+                        msgColor = Color::RED;
+                    }
                 }
                 
                 // Tampilkan pesan dan requirement
@@ -1531,6 +1598,77 @@ void GameEngine::showCredits() {
                 return;
             }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+
+// ============================================================================
+// RESET PROGRESS CONFIRMATION
+// ============================================================================
+
+/// @brief Menampilkan konfirmasi reset progress
+/// @return true jika user mengonfirmasi reset, false jika dibatalkan
+bool GameEngine::showResetConfirmation() {
+    int lastW = 0, lastH = 0;
+    
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+        
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+            
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+            
+            int boxW = 60;
+            int boxH = 16;
+            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::RED);
+            
+            printCentered(cy - 6, "!!! WARNING !!!", Color::RED);
+            printCentered(cy - 4, "Reset Progress", Color::YELLOW);
+            printCentered(cy - 2, "This will DELETE all campaign progress");
+            printCentered(cy - 1, "in ALL languages (ID, EN, Programmer)");
+            printCentered(cy + 1, "This action CANNOT be undone!", Color::RED);
+            printCentered(cy + 4, "[Y] Yes, Reset Everything", Color::RED);
+            printCentered(cy + 5, "[N] No, Cancel", Color::GREEN);
+            
+            drawStatusBar();
+            terminal.flush();
+        }
+        
+        if (terminal.hasInput()) {
+            char c = terminal.getInput();
+            
+            if (c == 'y' || c == 'Y') {
+                terminal.clear();
+                printCentered(terminal.getHeight() / 2, "Resetting progress...", Color::YELLOW);
+                terminal.flush();
+                
+                progressManager.resetProgress();
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                
+                terminal.clear();
+                printCentered(terminal.getHeight() / 2, "Progress reset successfully!", Color::GREEN);
+                terminal.flush();
+                
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                return true;
+            }
+            
+            if (c == 'n' || c == 'N' || c == 27) {
+                terminal.clear();
+                terminal.flush();
+                return false;
+            }
+        }
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
