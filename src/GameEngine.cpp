@@ -29,7 +29,10 @@
  * Menyiapkan terminal, mengatur status unlock awal untuk mode Campaign,
  * dan memuat database kata dari file eksternal.
  */
-GameEngine::GameEngine() : currentState(GameState::MENU_LANGUAGE), previousState(GameState::MENU_LANGUAGE) {
+GameEngine::GameEngine() : 
+    currentState(GameState::MENU_LANGUAGE), 
+    previousState(GameState::MENU_LANGUAGE),
+    gameUI(terminal) {  // Initialize gameUI dengan terminal reference
     terminal.initialize();
     
     // Rick Roll sudah ditampilkan atau belum
@@ -161,155 +164,6 @@ void GameEngine::restoreLanguageFromProgrammerMode() {
 }
 
 // ============================================================================
-// UI HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * @brief Menggambar kotak/border ASCII di koordinat tertentu
- * @param x Posisi horizontal (kolom)
- * @param y Posisi vertikal (baris)
- * @param w Lebar kotak
- * @param h Tinggi kotak
- * @param color Warna border
- */
-void GameEngine::drawBox(int x, int y, int w, int h, Color color) {
-    terminal.setColor(color);
-    
-    // Baris atas
-    terminal.setCursor(x, y);
-    terminal.print("+");
-    for(int i=0; i<w-2; ++i) terminal.print("-");
-    terminal.print("+");
-    
-    // Sisi kiri dan kanan
-    for(int i=1; i<h-1; ++i) {
-        terminal.setCursor(x, y+i);
-        terminal.print("|");
-        terminal.setCursor(x+w-1, y+i);
-        terminal.print("|");
-    }
-    
-    // Baris bawah
-    terminal.setCursor(x, y+h-1);
-    terminal.print("+");
-    for(int i=0; i<w-2; ++i) terminal.print("-");
-    terminal.print("+");
-    
-    terminal.resetColor();
-}
-
-/**
- * @brief Mencetak teks di tengah layar secara horizontal
- * @param y Posisi baris (vertikal)
- * @param text Teks yang akan dicetak
- * @param color Warna teks
- */
-void GameEngine::printCentered(int y, std::string text, Color color) {
-    int cx = terminal.getWidth() / 2;
-    int x = cx - (text.length() / 2);
-    terminal.setCursor(x, y);
-    if (color != Color::DEFAULT) terminal.setColor(color);
-    terminal.print(text);
-    terminal.resetColor();
-}
-
-/**
- * @brief Menggambar status bar di bagian bawah layar
- * 
- * Menampilkan informasi: Bahasa, Durasi, dan Mode yang dipilih
- */
-void GameEngine::drawStatusBar() {
-    int w = terminal.getWidth();
-    int h = terminal.getHeight();
-    int y = h - 2;
-
-    // Siapkan teks status
-    std::string lang = currentLanguage.empty() ? "N/A" : 
-                      (currentLanguage == "id" ? "ID" : 
-                      (currentLanguage == "en" ? "EN" : "PROG"));
-    
-    std::string time;
-    if (selectedDuration == -1) time = "Inf";
-    else if (selectedDuration == 0) time = "30s";
-    else time = std::to_string(selectedDuration) + "s";
-
-    std::string mode = currentMode.empty() ? "N/A" : 
-                      (currentMode == "manual" ? "Manual" : "Campaign");
-    if (currentLanguage == "prog") mode = "Programmer";
-
-    std::string status = " Lang: " + lang + " | Time: " + time + " | Mode: " + mode + " ";
-
-    // Tentukan lebar bar (dengan padding)
-    int barWidth = status.length() + 75;
-    if (barWidth < 40) barWidth = 40;
-    if (barWidth > w) barWidth = w;
-
-    // Posisikan di tengah
-    int startX = (w - barWidth) / 2;
-
-    // Gambar background biru
-    terminal.setBackgroundColor(Color::BLUE);
-    std::string bg(barWidth, ' ');
-    terminal.setCursor(startX + 1, y);
-    terminal.print(bg);
-
-    // Tulis teks di atas background
-    printCentered(y, status, Color::WHITE);
-    terminal.resetColor();
-}
-
-/**
- * @brief Mendapatkan input string dari user (untuk input custom)
- * @param digitsOnly True jika hanya menerima angka
- * @return String hasil input user
- */
-std::string GameEngine::getStringInput(bool digitsOnly) {
-    std::string inputBuf = "";
-    int startX = terminal.getWidth() / 2 - 10;
-    int startY = terminal.getHeight() / 2 + 1;
-    
-    terminal.setCursor(startX + inputBuf.length(), startY);
-    terminal.showCursor();
-
-    while(true) {
-        if (terminal.hasInput()) {
-            char c = terminal.getInput();
-            
-            // ESC - Batalkan input
-            if (c == 27) { 
-                terminal.hideCursor(); 
-                return ""; 
-            }
-            
-            // ENTER - Konfirmasi input
-            if (c == 10 || c == 13) { 
-                terminal.hideCursor(); 
-                return inputBuf; 
-            }
-            
-            // BACKSPACE - Hapus karakter
-            if (c == 127 || c == '\b' || c == 8) { 
-                if (!inputBuf.empty()) {
-                    inputBuf.pop_back();
-                    terminal.setCursor(startX + inputBuf.length(), startY);
-                    terminal.print(" ");
-                    terminal.setCursor(startX + inputBuf.length(), startY);
-                    terminal.flush(); // Flush untuk visual feedback
-                }
-            } 
-            // Input karakter
-            else if (!digitsOnly || (c >= '0' && c <= '9')) {
-                if (c >= 32 && c <= 126 && inputBuf.length() < 20) {
-                     inputBuf += c;
-                     terminal.print(std::string(1, c));
-                     terminal.flush(); // Flush untuk visual feedback
-                }
-            }
-        }
-    }
-}
-
-// ============================================================================
 // MENU HANDLERS
 // ============================================================================
 
@@ -349,24 +203,24 @@ void GameEngine::handleMenuLanguage() {
             // Kotak menu
             int boxW = 68; 
             int boxH = 18; 
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
 
             // Tampilkan judul dan menu
-            printCentered(cy - 7, title1, Color::CYAN);
-            printCentered(cy - 6, title2, Color::CYAN);
-            printCentered(cy - 5, title3, Color::CYAN);
-            printCentered(cy - 4, title4, Color::CYAN);
-            printCentered(cy - 3, title5, Color::CYAN);
-            printCentered(cy - 2, title6, Color::CYAN);
-            printCentered(cy - 1, title7, Color::CYAN);
+            gameUI.printCentered(cy - 7, title1, Color::CYAN);
+            gameUI.printCentered(cy - 6, title2, Color::CYAN);
+            gameUI.printCentered(cy - 5, title3, Color::CYAN);
+            gameUI.printCentered(cy - 4, title4, Color::CYAN);
+            gameUI.printCentered(cy - 3, title5, Color::CYAN);
+            gameUI.printCentered(cy - 2, title6, Color::CYAN);
+            gameUI.printCentered(cy - 1, title7, Color::CYAN);
             
-            printCentered(cy + 1, subtitle, Color::BLUE);
+            gameUI.printCentered(cy + 1, subtitle, Color::BLUE);
 
-            printCentered(cy + 3, "[1] Indonesia (ID)");
-            printCentered(cy + 4, "[2] English (EN)");
-            printCentered(cy + 6, "(Q) Quit", Color::RED);
+            gameUI.printCentered(cy + 3, "[1] Indonesia (ID)");
+            gameUI.printCentered(cy + 4, "[2] English (EN)");
+            gameUI.printCentered(cy + 6, "(Q) Quit", Color::RED);
 
-            drawStatusBar();
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -421,17 +275,17 @@ void GameEngine::handleMenuDuration() {
 
             int boxW = 75;
             int boxH = 14;
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
-            printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
-            printCentered(cy - 2, "[1] 15 Seconds");
-            printCentered(cy - 1, "[2] 30 Seconds");
-            printCentered(cy, "[3] 60 Seconds");
-            printCentered(cy + 1, "[4] Custom");
-            printCentered(cy + 2, "[5] Tanpa Waktu");
-            printCentered(cy + 4, "(B) Back", Color::YELLOW);
+            gameUI.printCentered(cy - 5, "SELECT DURATION", Color::MAGENTA);
+            gameUI.printCentered(cy - 2, "[1] 15 Seconds");
+            gameUI.printCentered(cy - 1, "[2] 30 Seconds");
+            gameUI.printCentered(cy, "[3] 60 Seconds");
+            gameUI.printCentered(cy + 1, "[4] Custom");
+            gameUI.printCentered(cy + 2, "[5] Tanpa Waktu");
+            gameUI.printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
-            drawStatusBar();
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -472,12 +326,12 @@ void GameEngine::handleMenuDuration() {
                 int cy = h / 2; 
                 int cx = w / 2;
 
-                drawBox(cx - 30, cy - 5, 60, 12, Color::MAGENTA);
-                printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
-                printCentered(cy + 3, "(ESC) Cancel", Color::YELLOW);
+                gameUI.drawBox(cx - 30, cy - 5, 60, 12, Color::MAGENTA);
+                gameUI.printCentered(cy - 2, "Enter Duration (seconds):", Color::WHITE);
+                gameUI.printCentered(cy + 3, "(ESC) Cancel", Color::YELLOW);
                 terminal.flush(); // Flush before input
                 
-                std::string inp = getStringInput(true);
+                std::string inp = gameUI.getStringInput(true);
                 lastW = 0; // Force redraw
 
                 if (inp.empty()) continue;
@@ -521,14 +375,14 @@ void GameEngine::handleMenuMode() {
 
             int boxW = 50;
             int boxH = 12;
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::GREEN);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::GREEN);
 
-            printCentered(cy - 4, "SELECT MODE", Color::GREEN);
-            printCentered(cy, "[1] Manual Mode");
-            printCentered(cy + 1, "[2] Campaign Mode");
-            printCentered(cy + 3, "(B) Back", Color::YELLOW);
+            gameUI.printCentered(cy - 4, "SELECT MODE", Color::GREEN);
+            gameUI.printCentered(cy, "[1] Manual Mode");
+            gameUI.printCentered(cy + 1, "[2] Campaign Mode");
+            gameUI.printCentered(cy + 3, "(B) Back", Color::YELLOW);
 
-            drawStatusBar();
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -585,12 +439,12 @@ void GameEngine::handleMenuDifficulty() {
 
                 int boxW = 50;
                 int boxH = 10;
-                drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::BLUE);
-                printCentered(cy - 3, "MANUAL SETUP", Color::BLUE);
-                printCentered(cy - 1, "Enter Target WPM:", Color::WHITE);
-                printCentered(cy + 3, "(ESC) Back | (ENTER) Confirm", Color::YELLOW);
+                gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::BLUE);
+                gameUI.printCentered(cy - 3, "MANUAL SETUP", Color::BLUE);
+                gameUI.printCentered(cy - 1, "Enter Target WPM:", Color::WHITE);
+                gameUI.printCentered(cy + 3, "(ESC) Back | (ENTER) Confirm", Color::YELLOW);
 
-                drawStatusBar();
+                gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
 
                 // Tampilkan input buffer
                 int inputX = cx - 10;
@@ -669,9 +523,9 @@ void GameEngine::handleMenuDifficulty() {
 
             int boxW = 60;
             int boxH = 24;
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
-            printCentered(cy - 9, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
+            gameUI.printCentered(cy - 9, "CAMPAIGN DIFFICULTY", Color::MAGENTA);
 
             // Status lock dan persyaratan
             bool easyUnlocked = progressManager.isUnlocked(currentLanguage, Difficulty::EASY);
@@ -708,9 +562,9 @@ void GameEngine::handleMenuDifficulty() {
             Color cH = !hardUnlocked ? Color::RED : 
                     (progressManager.isCompleted(currentLanguage, Difficulty::HARD) ? Color::GREEN : Color::WHITE);
 
-            printCentered(cy - 6, easyText, cE);
-            printCentered(cy - 5, mediumText, cM);
-            printCentered(cy - 4, hardText, cH);
+            gameUI.printCentered(cy - 6, easyText, cE);
+            gameUI.printCentered(cy - 5, mediumText, cM);
+            gameUI.printCentered(cy - 4, hardText, cH);
             
             std::string progText = "[4] Programmer Mode";
             Color progColor = Color::CYAN;
@@ -724,7 +578,7 @@ void GameEngine::handleMenuDifficulty() {
                 progColor = Color::GREEN;
             }
 
-            printCentered(cy - 2, progText, progColor);
+            gameUI.printCentered(cy - 2, progText, progColor);
 
             // Tampilkan banner berdasarkan progress
             bool mainLevelsCompleted = progressManager.isCompleted(currentLanguage, Difficulty::EASY) &&
@@ -744,35 +598,35 @@ void GameEngine::handleMenuDifficulty() {
             // Show banner sesuai status
             // Banner logic: Priority untuk Programmer Certification
             if (programmerCertified) {
-                printCentered(cy + 1, "================================", Color::CYAN);
-                printCentered(cy + 2, "PROGRAMMER CERTIFIED!", Color::CYAN);
-                printCentered(cy + 3, "You are now a certified programmer!", Color::WHITE);
-                printCentered(cy + 4, "Master of syntax and speed!", Color::GREEN);
-                printCentered(cy + 5, "================================", Color::CYAN);
+                gameUI.printCentered(cy + 1, "================================", Color::CYAN);
+                gameUI.printCentered(cy + 2, "PROGRAMMER CERTIFIED!", Color::CYAN);
+                gameUI.printCentered(cy + 3, "You are now a certified programmer!", Color::WHITE);
+                gameUI.printCentered(cy + 4, "Master of syntax and speed!", Color::GREEN);
+                gameUI.printCentered(cy + 5, "================================", Color::CYAN);
             }
             else if (mainLevelsCompleted) {
-                printCentered(cy + 1, "================================", Color::GREEN);
-                printCentered(cy + 2, "CONGRATULATIONS!", Color::GREEN);
-                printCentered(cy + 3, "You have completed all levels!", Color::WHITE);
-                printCentered(cy + 4, "================================", Color::GREEN);
-                printCentered(cy + 5, "Try Programmer Mode to get certified!", Color::CYAN);
+                gameUI.printCentered(cy + 1, "================================", Color::GREEN);
+                gameUI.printCentered(cy + 2, "CONGRATULATIONS!", Color::GREEN);
+                gameUI.printCentered(cy + 3, "You have completed all levels!", Color::WHITE);
+                gameUI.printCentered(cy + 4, "================================", Color::GREEN);
+                gameUI.printCentered(cy + 5, "Try Programmer Mode to get certified!", Color::CYAN);
             } 
             else {
-                printCentered(cy + 1, "Requirements:", Color::YELLOW);
-                printCentered(cy + 2, "Easy -> Medium: 40 WPM, 80% Accuracy");
-                printCentered(cy + 3, "Medium -> Hard: 60 WPM, 90% Accuracy");
-                printCentered(cy + 4, "Hard Complete: 70 WPM, 90% Accuracy");
-                printCentered(cy + 5, "Programmer Cert: 50 WPM, 90% Accuracy", Color::CYAN);
+                gameUI.printCentered(cy + 1, "Requirements:", Color::YELLOW);
+                gameUI.printCentered(cy + 2, "Easy -> Medium: 40 WPM, 80% Accuracy");
+                gameUI.printCentered(cy + 3, "Medium -> Hard: 60 WPM, 90% Accuracy");
+                gameUI.printCentered(cy + 4, "Hard Complete: 70 WPM, 90% Accuracy");
+                gameUI.printCentered(cy + 5, "Programmer Cert: 50 WPM, 90% Accuracy", Color::CYAN);
             }
 
             
-            printCentered(cy + 8, "(B) Back | (C) Credits", Color::YELLOW);
+            gameUI.printCentered(cy + 8, "(B) Back | (C) Credits", Color::YELLOW);
             // Reset progress hanya muncul jika Easy sudah selesai
             if (progressManager.isCompleted(currentLanguage, Difficulty::EASY)){
-                printCentered(cy + 9, "(R) Reset Progress", Color::RED);
+                gameUI.printCentered(cy + 9, "(R) Reset Progress", Color::RED);
             }
 
-            drawStatusBar();
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -1006,9 +860,9 @@ void GameEngine::renderGame() {
     
     // Instruksi awal
     if (!isGameStarted) {
-        printCentered(cy + 6, "Type to start...", Color::WHITE);
+        gameUI.printCentered(cy + 6, "Type to start...", Color::WHITE);
     } else {
-         printCentered(cy + 6, "                 ", Color::WHITE);
+         gameUI.printCentered(cy + 6, "                 ", Color::WHITE);
     }
     
     terminal.hideCursor();
@@ -1209,14 +1063,14 @@ void GameEngine::showResults() {
         // Tampilkan pesan selamat terlebih dahulu
         int boxW = 60;
         int boxH = 15;
-        drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+        gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
         
-        printCentered(cy - 5, "RESULTS", Color::CYAN);
-        printCentered(cy - 2, "WPM: " + std::to_string((int)currentStats.wpm), Color::GREEN);
-        printCentered(cy - 1, "Accuracy: " + std::to_string((int)currentStats.accuracy) + "%", Color::WHITE);
-        printCentered(cy + 1, "HARD MODE COMPLETED!!!", Color::GREEN);
-        printCentered(cy + 2, "CONGRATULATIONS!!!", Color::GREEN);
-        printCentered(cy + 4, "Preparing special surprise...", Color::YELLOW);
+        gameUI.printCentered(cy - 5, "RESULTS", Color::CYAN);
+        gameUI.printCentered(cy - 2, "WPM: " + std::to_string((int)currentStats.wpm), Color::GREEN);
+        gameUI.printCentered(cy - 1, "Accuracy: " + std::to_string((int)currentStats.accuracy) + "%", Color::WHITE);
+        gameUI.printCentered(cy + 1, "HARD MODE COMPLETED!!!", Color::GREEN);
+        gameUI.printCentered(cy + 2, "CONGRATULATIONS!!!", Color::GREEN);
+        gameUI.printCentered(cy + 4, "Preparing special surprise...", Color::YELLOW);
         
         // Flush sebelum delay
         terminal.flush();
@@ -1291,9 +1145,9 @@ void GameEngine::showResults() {
 
             int boxW = 50;
             int boxH = 20;
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
 
-            printCentered(cy - 8, "RESULTS", Color::CYAN);
+            gameUI.printCentered(cy - 8, "RESULTS", Color::CYAN);
 
             // Posisi label dan value (aligned)
             int labelX = cx - 12;
@@ -1423,10 +1277,10 @@ void GameEngine::showResults() {
                 
                 // Tampilkan pesan dan requirement
                 if (!msg.empty()) {
-                    printCentered(cy + 1, msg, msgColor);
+                    gameUI.printCentered(cy + 1, msg, msgColor);
                 }
                 if (!requirement.empty() && !pass) {
-                    printCentered(cy + 2, requirement, Color::YELLOW);
+                    gameUI.printCentered(cy + 2, requirement, Color::YELLOW);
                 }
             }
             // Manual Mode - Cek apakah target tercapai
@@ -1438,11 +1292,11 @@ void GameEngine::showResults() {
                     msg = "TARGET MISSED!"; 
                     msgColor = Color::RED; 
                 }
-                printCentered(cy + 2, msg, msgColor);
+                gameUI.printCentered(cy + 2, msg, msgColor);
             }
 
-            printCentered(cy + 5, "(C) Credits", Color::YELLOW);
-            printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
+            gameUI.printCentered(cy + 5, "(C) Credits", Color::YELLOW);
+            gameUI.printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -1547,20 +1401,20 @@ void GameEngine::showCredits() {
 
             int boxW = 50;
             int boxH = 18;
-            drawBox((w - boxW) / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
+            gameUI.drawBox((w - boxW) / 2, cy - boxH / 2, boxW, boxH, Color::MAGENTA);
 
-            printCentered(cy - 7, "CREDITS", Color::MAGENTA);
-            printCentered(cy - 5, "Developed by:", Color::CYAN);
+            gameUI.printCentered(cy - 7, "CREDITS", Color::MAGENTA);
+            gameUI.printCentered(cy - 5, "Developed by:", Color::CYAN);
             
             // Nama-nama developer
-            printCentered(cy - 3, "Alea Farrel", Color::WHITE);
-            printCentered(cy - 2, "Hensa Katelu", Color::WHITE);
-            printCentered(cy - 1, "Yanuar Adi Candra", Color::WHITE);
-            printCentered(cy, "Arif Wibowo P.", Color::WHITE);
-            printCentered(cy + 1, "Aria Mahendra U.", Color::WHITE);
+            gameUI.printCentered(cy - 3, "Alea Farrel", Color::WHITE);
+            gameUI.printCentered(cy - 2, "Hensa Katelu", Color::WHITE);
+            gameUI.printCentered(cy - 1, "Yanuar Adi Candra", Color::WHITE);
+            gameUI.printCentered(cy, "Arif Wibowo P.", Color::WHITE);
+            gameUI.printCentered(cy + 1, "Aria Mahendra U.", Color::WHITE);
             
-            printCentered(cy + 4, "Thank you for playing!", Color::GREEN);
-            printCentered(cy + 6, "Press ENTER to return", Color::YELLOW);
+            gameUI.printCentered(cy + 4, "Thank you for playing!", Color::GREEN);
+            gameUI.printCentered(cy + 6, "Press ENTER to return", Color::YELLOW);
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -1629,17 +1483,17 @@ bool GameEngine::showResetConfirmation() {
             
             int boxW = 60;
             int boxH = 16;
-            drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::RED);
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::RED);
             
-            printCentered(cy - 6, "!!! WARNING !!!", Color::RED);
-            printCentered(cy - 4, "Reset Progress", Color::YELLOW);
-            printCentered(cy - 2, "This will DELETE all campaign progress");
-            printCentered(cy - 1, "in ALL languages and difficulties");
-            printCentered(cy + 1, "This action CANNOT be undone!", Color::RED);
-            printCentered(cy + 4, "[Y] Yes, Reset Everything", Color::RED);
-            printCentered(cy + 5, "[N] No, Cancel", Color::GREEN);
+            gameUI.printCentered(cy - 6, "!!! WARNING !!!", Color::RED);
+            gameUI.printCentered(cy - 4, "Reset Progress", Color::YELLOW);
+            gameUI.printCentered(cy - 2, "This will DELETE all campaign progress");
+            gameUI.printCentered(cy - 1, "in ALL languages and difficulties");
+            gameUI.printCentered(cy + 1, "This action CANNOT be undone!", Color::RED);
+            gameUI.printCentered(cy + 4, "[Y] Yes, Reset Everything", Color::RED);
+            gameUI.printCentered(cy + 5, "[N] No, Cancel", Color::GREEN);
             
-            drawStatusBar();
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             terminal.flush();
         }
         
@@ -1648,7 +1502,7 @@ bool GameEngine::showResetConfirmation() {
             
             if (c == 'y' || c == 'Y') {
                 terminal.clear();
-                printCentered(terminal.getHeight() / 2, "Resetting progress...", Color::YELLOW);
+                gameUI.printCentered(terminal.getHeight() / 2, "Resetting progress...", Color::YELLOW);
                 terminal.flush();
                 
                 progressManager.resetProgress();
@@ -1656,7 +1510,7 @@ bool GameEngine::showResetConfirmation() {
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 
                 terminal.clear();
-                printCentered(terminal.getHeight() / 2, "Progress reset successfully!", Color::GREEN);
+                gameUI.printCentered(terminal.getHeight() / 2, "Progress reset successfully!", Color::GREEN);
                 terminal.flush();
                 
                 std::this_thread::sleep_for(std::chrono::seconds(1));

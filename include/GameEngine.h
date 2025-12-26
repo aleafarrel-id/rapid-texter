@@ -15,6 +15,7 @@
 #include "TextProvider.h"
 #include "Stats.h"
 #include "ProgressManager.h"
+#include "GameUI.h"
 #include <string>
 #include <vector>
 #include <chrono>
@@ -77,6 +78,7 @@ private:
     // ========================================================================
     
     Terminal terminal;              ///< Handler untuk operasi terminal (I/O, colors, cursor)
+    GameUI gameUI;                  ///< Handler untuk UI rendering
     TextProvider textProvider;      ///< Provider untuk database kata-kata
     ProgressManager progressManager;///< Manager untuk penyimpanan progress campaign
     GameState currentState;         ///< State aktif saat ini dalam State Machine
@@ -201,42 +203,6 @@ private:
      * @return true jika user konfirmasi reset, false jika cancel
      */
     bool showResetConfirmation();
-    
-    // ========================================================================
-    // PRIVATE METHODS - UI Helpers
-    // ========================================================================
-    
-    /**
-     * @brief Menggambar kotak/border ASCII
-     * @param x Posisi horizontal (kolom)
-     * @param y Posisi vertikal (baris)
-     * @param w Lebar kotak
-     * @param h Tinggi kotak
-     * @param color Warna border (default: WHITE)
-     */
-    void drawBox(int x, int y, int w, int h, Color color = Color::WHITE);
-    
-    /**
-     * @brief Mencetak teks di tengah layar secara horizontal
-     * @param y Posisi baris
-     * @param text Teks yang akan dicetak
-     * @param color Warna teks (default: DEFAULT)
-     */
-    void printCentered(int y, std::string text, Color color = Color::DEFAULT);
-    
-    /**
-     * @brief Menggambar status bar di bawah layar
-     * 
-     * Status bar menampilkan: Bahasa | Durasi | Mode
-     */
-    void drawStatusBar();
-    
-    /**
-     * @brief Mendapatkan input string dari user (untuk custom input)
-     * @param digitsOnly True jika hanya menerima angka (default: false)
-     * @return String hasil input user (kosong jika dibatalkan dengan ESC)
-     */
-    std::string getStringInput(bool digitsOnly = false);
 };
 
 #endif // GAMEENGINE_H
