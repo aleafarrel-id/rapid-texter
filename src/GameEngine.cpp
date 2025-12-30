@@ -30,8 +30,8 @@
  * dan memuat database kata dari file eksternal.
  */
 GameEngine::GameEngine() : 
-    currentState(GameState::MENU_LANGUAGE), 
-    previousState(GameState::MENU_LANGUAGE),
+    currentState(GameState::MENU_MAIN), 
+    previousState(GameState::MENU_MAIN),
     gameUI(terminal) {  // Initialize gameUI dengan terminal reference
     terminal.initialize();
     
@@ -60,6 +60,12 @@ GameEngine::GameEngine() :
 void GameEngine::run() {
     while (currentState != GameState::EXIT) {
         switch (currentState) {
+            case GameState::MENU_MAIN:
+                handleMenuMain();
+                break;
+            case GameState::MENU_HISTORY:
+                handleMenuHistory();
+                break;
             case GameState::MENU_LANGUAGE:
                 handleMenuLanguage();
                 break;
@@ -168,6 +174,261 @@ void GameEngine::restoreLanguageFromProgrammerMode() {
 // ============================================================================
 
 /**
+ * @brief Handler untuk menu utama
+ * 
+ * Menu pertama yang muncul saat aplikasi dibuka.
+ * User memilih: Start, Show History, atau Quit
+ */
+void GameEngine::handleMenuMain() {
+    int lastW = 0, lastH = 0;
+
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+
+            // ASCII Art Banner (sama seperti menu language lama)
+            std::string title1 = "  ______    ________   ______   ________  ______       ";
+            std::string title2 = " /_____/\\  /_______/\\ /_____/\\ /_______/\\/_____/\\      ";
+            std::string title3 = " \\:::_ \\ \\ \\::: _  \\ \\\\:::_ \\ \\\\__.::._\\/\\:::_ \\ \\     ";
+            std::string title4 = "  \\:(_) ) )_\\::(_)  \\ \\\\:(_) \\ \\  \\::\\ \\  \\:\\ \\ \\ \\    ";
+            std::string title5 = "   \\: __ `\\ \\\\:: __  \\ \\\\: ___\\/  _\\::\\ \\__\\:\\ \\ \\ \\   ";
+            std::string title6 = "    \\ \\ `\\ \\ \\\\:.\\ \\  \\ \\\\ \\ \\   /__\\::\\__/\\\\:\\/.:| |  ";
+            std::string title7 = "     \\_\\/ \\_\\/ \\__\\/\\__\\/ \\_\\/   \\________\\/ \\____/_/  ";
+            std::string subtitle = "RAPID TEXTER";
+
+            int boxW = 68; 
+            int boxH = 20; 
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
+
+            gameUI.printCentered(cy - 7, title1, Color::CYAN);
+            gameUI.printCentered(cy - 6, title2, Color::CYAN);
+            gameUI.printCentered(cy - 5, title3, Color::CYAN);
+            gameUI.printCentered(cy - 4, title4, Color::CYAN);
+            gameUI.printCentered(cy - 3, title5, Color::CYAN);
+            gameUI.printCentered(cy - 2, title6, Color::CYAN);
+            gameUI.printCentered(cy - 1, title7, Color::CYAN);
+            
+            gameUI.printCentered(cy + 1, subtitle, Color::BLUE);
+
+            // Menu options
+            gameUI.printCentered(cy + 4, "[1] Start Game", Color::GREEN);
+            gameUI.printCentered(cy + 5, "[2] Show History", Color::YELLOW);
+            gameUI.printCentered(cy + 7, "(Q) Quit", Color::RED);
+
+            // Status bar kosong (atau bisa isi dengan info versi, dll)
+            gameUI.drawStatusBar("", 0, "");
+            
+            terminal.flush();
+        }
+
+        // Handle input
+        if (terminal.hasInput()) {
+            char c = terminal.getInput();
+            if (c == 'q' || c == 'Q') { 
+                currentState = GameState::EXIT; 
+                return; 
+            }
+            if (c == '1') { 
+                // Start -> ke pemilihan bahasa
+                currentState = GameState::MENU_LANGUAGE; 
+                return; 
+            }
+            if (c == '2') { 
+                // Show History
+                currentState = GameState::MENU_HISTORY; 
+                return; 
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+/**
+ * @brief Handler untuk menu history dengan pagination
+ * 
+ * Menampilkan history permainan dengan sistem pagination.
+ * Maksimal 5 entry per halaman.
+ */
+void GameEngine::handleMenuHistory() {
+    int currentPage = 1;
+    const int pageSize = 5;
+    int totalPages = historyManager.getTotalPages(pageSize);
+    int totalEntries = historyManager.getTotalEntries();
+    
+    int lastW = 0, lastH = 0;
+
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+
+            // Box lebih besar untuk menampung data dengan rapi
+            int boxW = 85;
+            int boxH = 27;
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::YELLOW);
+
+            gameUI.printCentered(cy - 11, "GAME HISTORY", Color::YELLOW);
+            
+            if (totalEntries == 0) {
+                // Tidak ada history
+                gameUI.printCentered(cy - 1, "No history available yet.", Color::WHITE);
+                gameUI.printCentered(cy, "Play some games to see your history here!", Color::CYAN);
+            } else {
+                // Tampilkan info pagination
+                std::string pageInfo = "Page " + std::to_string(currentPage) + " of " + std::to_string(totalPages);
+                std::string totalInfo = "(" + std::to_string(totalEntries) + " total entries)";
+                gameUI.printCentered(cy - 9, pageInfo, Color::CYAN);
+                gameUI.printCentered(cy - 8, totalInfo, Color::WHITE);
+                
+                // Ambil entries untuk halaman ini
+                auto entries = historyManager.getPage(currentPage, pageSize);
+                
+                // ====================================================================
+                // HEADER TABEL
+                // ====================================================================
+                int startY = cy - 5;
+                int startX = cx - 40; // Start dari kiri dengan padding
+                
+                terminal.setCursor(startX, startY);
+                terminal.setColor(Color::CYAN);
+                
+                // Header dengan format yang konsisten dengan data
+                char headerLine[100];
+                snprintf(headerLine, sizeof(headerLine), "%-7s%-10s%-8s%-12s%-6s%-12s%s",
+                         "WPM", "Accuracy", "Errors", "Difficulty", "Lang", "Mode", "Date/Time");
+                terminal.print(headerLine);
+                
+                terminal.resetColor();
+                
+                // Garis pemisah
+                terminal.setCursor(startX, startY + 1);
+                terminal.setColor(Color::CYAN);
+                gameUI.printCentered(cy - 4, std::string(boxW - 2, '-'));
+                terminal.resetColor();
+                
+                // ====================================================================
+                // DATA ENTRIES DENGAN ALIGNMENT YANG KONSISTEN
+                // ====================================================================
+                for (size_t i = 0; i < entries.size(); ++i) {
+                    const auto& entry = entries[i];
+                    // Tambahkan spacing antar entry (i * 2 untuk jarak 1 baris antar entry)
+                    int rowY = startY + 3 + static_cast<int>(i) * 2;
+                    
+                    terminal.setCursor(startX, rowY);
+                    
+                    // Format row dengan alignment yang sama dengan header
+                    char rowLine[120];
+                    
+                    // Prepare strings dengan padding yang benar
+                    char wpmStr[10];
+                    snprintf(wpmStr, sizeof(wpmStr), "%.1f", entry.wpm);
+                    
+                    char accStr[12];
+                    snprintf(accStr, sizeof(accStr), "%.1f%%", entry.accuracy);
+                    
+                    // Truncate strings jika terlalu panjang
+                    std::string diffStr = entry.difficulty;
+                    if (diffStr.length() > 11) diffStr = diffStr.substr(0, 11);
+                    
+                    std::string langStr = entry.language;
+                    if (langStr.length() > 5) langStr = langStr.substr(0, 5);
+                    
+                    std::string modeStr = entry.mode;
+                    if (modeStr.length() > 11) modeStr = modeStr.substr(0, 11);
+                    
+                    // Print dengan format yang konsisten
+                    snprintf(rowLine, sizeof(rowLine), "%-7s%-10s%-8d%-12s%-6s%-12s%s",
+                             wpmStr, accStr, entry.errors, diffStr.c_str(), 
+                             langStr.c_str(), modeStr.c_str(), entry.timestamp.c_str());
+                    terminal.print(rowLine);
+                }
+                
+                // Garis pemisah bawah tabel (posisi setelah entry terakhir dengan spacing)
+                int bottomY = startY + 3 + static_cast<int>(entries.size()) * 2;
+                terminal.setCursor(startX, bottomY);
+                terminal.setColor(Color::CYAN);
+                gameUI.printCentered(bottomY, std::string(boxW - 2, '-'));
+                terminal.resetColor();
+                
+                // ====================================================================
+                // NAVIGATION HINTS
+                // ====================================================================
+                if (totalPages > 1) {
+                    gameUI.printCentered(cy + 9, "[1] Previous | [2] Next", Color::CYAN);
+                }
+            }
+
+            // Menu footer
+            gameUI.printCentered(cy + 11, "(B) Back", Color::YELLOW);
+            if (totalEntries > 0) {
+                gameUI.printCentered(cy + 12, "(C) Clear History", Color::RED);
+            }
+            terminal.resetColor();
+            terminal.flush();
+        }
+
+        // Handle input
+        if (terminal.hasInput()) {
+            char c = terminal.getInput();
+            
+            if (c == 'b' || c == 'B') { 
+                currentState = GameState::MENU_MAIN; 
+                return; 
+            }
+            
+            // Pagination controls (hanya jika ada lebih dari 1 halaman)
+            if (totalPages > 1) {
+                if (c == '2') { // Next page
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        lastW = 0; // Force redraw
+                    }
+                }
+                if (c == '1') { // Previous page
+                    if (currentPage > 1) {
+                        currentPage--;
+                        lastW = 0; // Force redraw
+                    }
+                }
+            }
+            
+            // Clear History (hanya jika ada history)
+            if (totalEntries > 0 && (c == 'c' || c == 'C')) {
+                if (showClearHistoryConfirmation()) {
+                    // Refresh data setelah clear
+                    totalPages = historyManager.getTotalPages(pageSize);
+                    totalEntries = historyManager.getTotalEntries();
+                    currentPage = 1;
+                }
+                lastW = 0; // Force redraw
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+/**
  * @brief Handler untuk menu pemilihan bahasa
  * 
  * User memilih antara: Indonesia (ID), English (EN), atau Quit
@@ -190,35 +451,15 @@ void GameEngine::handleMenuLanguage() {
             int cy = h / 2;
             int cx = w / 2;
 
-            // ASCII Art Banner
-            std::string title1 = "  ______    ________   ______   ________  ______       ";
-            std::string title2 = " /_____/\\  /_______/\\ /_____/\\ /_______/\\/_____/\\      ";
-            std::string title3 = " \\:::_ \\ \\ \\::: _  \\ \\\\:::_ \\ \\\\__.::._\\/\\:::_ \\ \\     ";
-            std::string title4 = "  \\:(_) ) )_\\::(_)  \\ \\\\:(_) \\ \\  \\::\\ \\  \\:\\ \\ \\ \\    ";
-            std::string title5 = "   \\: __ `\\ \\\\:: __  \\ \\\\: ___\\/  _\\::\\ \\__\\:\\ \\ \\ \\   ";
-            std::string title6 = "    \\ \\ `\\ \\ \\\\:.\\ \\  \\ \\\\ \\ \\   /__\\::\\__/\\\\:\\/.:| |  ";
-            std::string title7 = "     \\_\\/ \\_\\/ \\__\\/\\__\\/ \\_\\/   \\________\\/ \\____/_/  ";
-            std::string subtitle = "RAPID TEXTER";
-
             // Kotak menu
-            int boxW = 68; 
-            int boxH = 18; 
+            int boxW = 60; 
+            int boxH = 14; 
             gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::CYAN);
 
-            // Tampilkan judul dan menu
-            gameUI.printCentered(cy - 7, title1, Color::CYAN);
-            gameUI.printCentered(cy - 6, title2, Color::CYAN);
-            gameUI.printCentered(cy - 5, title3, Color::CYAN);
-            gameUI.printCentered(cy - 4, title4, Color::CYAN);
-            gameUI.printCentered(cy - 3, title5, Color::CYAN);
-            gameUI.printCentered(cy - 2, title6, Color::CYAN);
-            gameUI.printCentered(cy - 1, title7, Color::CYAN);
-            
-            gameUI.printCentered(cy + 1, subtitle, Color::BLUE);
-
-            gameUI.printCentered(cy + 3, "[1] Indonesia (ID)");
-            gameUI.printCentered(cy + 4, "[2] English (EN)");
-            gameUI.printCentered(cy + 6, "(Q) Quit", Color::RED);
+            gameUI.printCentered(cy - 5, "SELECT LANGUAGE", Color::CYAN);
+            gameUI.printCentered(cy - 1, "[1] Indonesia (ID)");
+            gameUI.printCentered(cy + 0, "[2] English (EN)");
+            gameUI.printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
             gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
             
@@ -229,10 +470,10 @@ void GameEngine::handleMenuLanguage() {
         // Handle input
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 'q' || c == 'Q') { 
-                currentState = GameState::EXIT; 
-                return; 
-            }
+            if (c == 'b' || c == 'B') { 
+                    currentState = GameState::MENU_MAIN; // Kembali ke menu utama
+                    return; 
+                }
             if (c == '1') { 
                 currentLanguage = "id"; 
                 originalLanguage = "id"; // Simpan bahasa asli
@@ -1036,6 +1277,35 @@ void GameEngine::showResults() {
 
     bool shouldShowRickRoll = false;
     bool hardJustCompleted = false;
+
+    // Save history entry
+    HistoryEntry entry;
+    entry.wpm = currentStats.wpm;
+    entry.accuracy = currentStats.accuracy;
+    entry.errors = currentStats.errors;
+    
+    // Format difficulty
+    switch (currentDifficulty) {
+        case Difficulty::EASY: entry.difficulty = "Easy"; break;
+        case Difficulty::MEDIUM: entry.difficulty = "Medium"; break;
+        case Difficulty::HARD: entry.difficulty = "Hard"; break;
+        case Difficulty::PROGRAMMER: entry.difficulty = "Programmer"; break;
+    }
+    
+    // Format language
+    if (currentLanguage == "id") entry.language = "ID";
+    else if (currentLanguage == "en") entry.language = "EN";
+    else if (currentLanguage == "prog") entry.language = "PROG";
+    else entry.language = currentLanguage;
+    
+    // Format mode
+    entry.mode = (currentMode == "manual") ? "Manual" : "Campaign";
+    
+    // Timestamp akan otomatis diset oleh HistoryManager
+    entry.timestamp = ""; // akan di-set di saveEntry()
+    
+    // Save ke history
+    historyManager.saveEntry(entry);
     
     // Cek apakah ini pertama kali menyelesaikan Hard mode
     if (currentMode == "campaign" && currentDifficulty == Difficulty::HARD) {
@@ -1511,6 +1781,75 @@ bool GameEngine::showResetConfirmation() {
                 
                 terminal.clear();
                 gameUI.printCentered(terminal.getHeight() / 2, "Progress reset successfully!", Color::GREEN);
+                terminal.flush();
+                
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                return true;
+            }
+            
+            if (c == 'n' || c == 'N') {
+                terminal.clear();
+                terminal.flush();
+                return false;
+            }
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+// ============================================================================
+// CLEAR HISTORY CONFIRMATION
+// ============================================================================
+
+/// @brief Menampilkan konfirmasi clear history
+/// @return true jika user mengonfirmasi clear, false jika dibatalkan
+bool GameEngine::showClearHistoryConfirmation() {
+    int lastW = 0, lastH = 0;
+    
+    while (true) {
+        int currW = terminal.getWidth();
+        int currH = terminal.getHeight();
+        
+        if (currW != lastW || currH != lastH) {
+            lastW = currW;
+            lastH = currH;
+            terminal.clear();
+            
+            int h = terminal.getHeight();
+            int w = terminal.getWidth();
+            int cy = h / 2;
+            int cx = w / 2;
+            
+            int boxW = 60;
+            int boxH = 16;
+            gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::YELLOW);
+            
+            gameUI.printCentered(cy - 6, "!!! WARNING !!!", Color::YELLOW);
+            gameUI.printCentered(cy - 4, "Clear History", Color::RED);
+            gameUI.printCentered(cy - 2, "This will DELETE all game history");
+            gameUI.printCentered(cy - 1, "including WPM, accuracy, and timestamps");
+            gameUI.printCentered(cy + 1, "This action CANNOT be undone!", Color::RED);
+            gameUI.printCentered(cy + 4, "[Y] Yes, Clear All History", Color::RED);
+            gameUI.printCentered(cy + 5, "[N] No, Cancel", Color::GREEN);
+            
+            terminal.flush();
+        }
+        
+        if (terminal.hasInput()) {
+            char c = terminal.getInput();
+            
+            if (c == 'y' || c == 'Y') {
+                terminal.clear();
+                gameUI.printCentered(terminal.getHeight() / 2, "Clearing history...", Color::YELLOW);
+                terminal.flush();
+                
+                historyManager.clearHistory();
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                
+                terminal.clear();
+                gameUI.printCentered(terminal.getHeight() / 2, "History cleared successfully!", Color::GREEN);
                 terminal.flush();
                 
                 std::this_thread::sleep_for(std::chrono::seconds(1));

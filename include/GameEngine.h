@@ -15,6 +15,7 @@
 #include "TextProvider.h"
 #include "Stats.h"
 #include "ProgressManager.h"
+#include "HistoryManager.h"
 #include "GameUI.h"
 #include <string>
 #include <vector>
@@ -31,10 +32,12 @@
  * Setiap state merepresentasikan layar/tampilan berbeda dalam aplikasi.
  */
 enum class GameState {
+    MENU_MAIN,          ///< Menu utama (Start, History, Quit)
     MENU_LANGUAGE,      ///< Menu pemilihan bahasa (ID/EN)
     MENU_DURATION,      ///< Menu pemilihan durasi (15s/30s/60s/Custom/Unlimited)
     MENU_MODE,          ///< Menu pemilihan mode (Manual/Campaign)
     MENU_DIFFICULTY,    ///< Menu kesulitan atau setup manual
+    MENU_HISTORY,       ///< Menu tampilan history - BARU
     PLAYING,            ///< State saat game sedang berlangsung
     RESULTS,            ///< Layar hasil/statistik akhir
     CREDITS,            ///< Layar credits
@@ -81,6 +84,7 @@ private:
     GameUI gameUI;                  ///< Handler untuk UI rendering
     TextProvider textProvider;      ///< Provider untuk database kata-kata
     ProgressManager progressManager;///< Manager untuk penyimpanan progress campaign
+    HistoryManager historyManager;  ///< Manager untuk penyimpanan history permainan
     GameState currentState;         ///< State aktif saat ini dalam State Machine
     GameState previousState;        ///< State sebelumnya (untuk kembali dari credits)
     
@@ -130,6 +134,16 @@ private:
     // PRIVATE METHODS - State Handlers
     // ========================================================================
     
+    /**
+     * @brief Handler untuk menu utama (Start, History, Quit)
+     */
+    void handleMenuMain();
+
+    /**
+     * @brief Handler untuk menu history dengan pagination
+     */
+    void handleMenuHistory();
+
     /**
      * @brief Handler untuk menu pemilihan bahasa
      */
@@ -203,6 +217,12 @@ private:
      * @return true jika user konfirmasi reset, false jika cancel
      */
     bool showResetConfirmation();
+
+    /**
+     * @brief Menampilkan konfirmasi clear history dengan warning
+     * @return true jika user konfirmasi clear, false jika cancel
+     */
+    bool showClearHistoryConfirmation();
 };
 
 #endif // GAMEENGINE_H
