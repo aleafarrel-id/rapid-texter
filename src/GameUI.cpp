@@ -157,7 +157,7 @@ void GameUI::printCentered(int y, std::string text, Color color) {
  * - Text: Putih, centered di atas background
  * - Responsive: Lebar bar menyesuaikan dengan lebar terminal
  */
-void GameUI::drawStatusBar(const std::string& language, int duration, const std::string& mode) {
+void GameUI::drawStatusBar(const std::string& language, int duration, const std::string& mode, bool sfxEnabled) {
     int w = terminal.getWidth();
     int h = terminal.getHeight();
     int y = h - 2;  // Posisi: 2 baris dari bawah
@@ -184,8 +184,11 @@ void GameUI::drawStatusBar(const std::string& language, int duration, const std:
     // Override mode jika sedang dalam Programmer mode
     if (language == "prog") modeText = "Programmer";
     
-    // Gabungkan semua informasi menjadi satu string
-    std::string status = " Lang: " + lang + " | Time: " + time + " | Mode: " + modeText + " ";
+    // Format SFX status
+    std::string sfxStatus = sfxEnabled ? "On" : "Off";
+    
+    // Gabungkan semua informasi menjadi satu string (dengan SFX status)
+    std::string status = " Lang: " + lang + " | Time: " + time + " | Mode: " + modeText + " | SFX: " + sfxStatus + " (S) ";
 
     // ========================================================================
     // LAYOUT CALCULATION - Hitung dimensi dan posisi bar

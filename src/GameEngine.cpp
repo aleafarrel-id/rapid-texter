@@ -35,6 +35,9 @@ GameEngine::GameEngine() :
     gameUI(terminal) {  // Initialize gameUI dengan terminal reference
     terminal.initialize();
     
+    // Preload audio system untuk menghilangkan delay pada pemutaran pertama
+    SFXManager::preload();
+    
     // Rick Roll sudah ditampilkan atau belum
     rickRollAlreadyShown = false;
     
@@ -225,8 +228,8 @@ void GameEngine::handleMenuMain() {
             gameUI.printCentered(cy + 5, "[2] Show History", Color::YELLOW);
             gameUI.printCentered(cy + 7, "(Q) Quit", Color::RED);
 
-            // Status bar kosong (atau bisa isi dengan info versi, dll)
-            gameUI.drawStatusBar("", 0, "");
+            // Status bar dengan SFX status
+            gameUI.drawStatusBar("", 0, "", SFXManager::isEnabled());
             
             terminal.flush();
         }
@@ -239,14 +242,22 @@ void GameEngine::handleMenuMain() {
                 return; 
             }
             if (c == '1') { 
+                SFXManager::playTrue();
                 // Start -> ke pemilihan bahasa
                 currentState = GameState::MENU_LANGUAGE; 
                 return; 
             }
             if (c == '2') { 
+                SFXManager::playTrue();
                 // Show History
                 currentState = GameState::MENU_HISTORY; 
                 return; 
+            }
+            // Toggle SFX dengan shortcut S
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
             }
         }
 
@@ -384,6 +395,10 @@ void GameEngine::handleMenuHistory() {
                 gameUI.printCentered(cy + 12, "(C) Clear History", Color::RED);
             }
             terminal.resetColor();
+            
+            // Status bar dengan SFX status
+            gameUI.drawStatusBar("", 0, "", SFXManager::isEnabled());
+            
             terminal.flush();
         }
 
@@ -392,22 +407,38 @@ void GameEngine::handleMenuHistory() {
             char c = terminal.getInput();
             
             if (c == 'b' || c == 'B') { 
+                SFXManager::playTrue();
                 currentState = GameState::MENU_MAIN; 
                 return; 
+            }
+            
+            // Toggle SFX dengan shortcut S
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
             }
             
             // Pagination controls (hanya jika ada lebih dari 1 halaman)
             if (totalPages > 1) {
                 if (c == '2') { // Next page
                     if (currentPage < totalPages) {
+                        SFXManager::playTrue();
                         currentPage++;
                         lastW = 0; // Force redraw
+                    } else {
+                        // Sudah di halaman terakhir
+                        SFXManager::playFalse();
                     }
                 }
                 if (c == '1') { // Previous page
                     if (currentPage > 1) {
+                        SFXManager::playTrue();
                         currentPage--;
                         lastW = 0; // Force redraw
+                    } else {
+                        // Sudah di halaman pertama
+                        SFXManager::playFalse();
                     }
                 }
             }
@@ -415,6 +446,7 @@ void GameEngine::handleMenuHistory() {
             // Clear History (hanya jika ada history)
             if (totalEntries > 0 && (c == 'c' || c == 'C')) {
                 if (showClearHistoryConfirmation()) {
+                    SFXManager::playTrue();
                     // Refresh data setelah clear
                     totalPages = historyManager.getTotalPages(pageSize);
                     totalEntries = historyManager.getTotalEntries();
@@ -461,7 +493,7 @@ void GameEngine::handleMenuLanguage() {
             gameUI.printCentered(cy + 0, "[2] English (EN)");
             gameUI.printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
-            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode, SFXManager::isEnabled());
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -471,20 +503,29 @@ void GameEngine::handleMenuLanguage() {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'b' || c == 'B') { 
-                    currentState = GameState::MENU_MAIN; // Kembali ke menu utama
-                    return; 
-                }
+                SFXManager::playTrue();
+                currentState = GameState::MENU_MAIN; // Kembali ke menu utama
+                return; 
+            }
             if (c == '1') { 
+                SFXManager::playTrue();
                 currentLanguage = "id"; 
                 originalLanguage = "id"; // Simpan bahasa asli
                 currentState = GameState::MENU_DURATION; 
                 return; 
             }
             if (c == '2') { 
+                SFXManager::playTrue();
                 currentLanguage = "en"; 
                 originalLanguage = "en"; // Simpan bahasa asli
                 currentState = GameState::MENU_DURATION; 
                 return; 
+            }
+            // Toggle SFX dengan shortcut S
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
             }
         }
 
@@ -526,7 +567,7 @@ void GameEngine::handleMenuDuration() {
             gameUI.printCentered(cy + 2, "[5] Tanpa Waktu");
             gameUI.printCentered(cy + 4, "(B) Back", Color::YELLOW);
 
-            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode, SFXManager::isEnabled());
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -535,32 +576,45 @@ void GameEngine::handleMenuDuration() {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'b' || c == 'B') { 
+                SFXManager::playTrue();
                 currentState = GameState::MENU_LANGUAGE; 
                 return; 
             }
             if (c == '1') { 
+                SFXManager::playTrue();
                 selectedDuration = 15; 
                 currentState = GameState::MENU_MODE; 
                 return; 
             }
             if (c == '2') { 
+                SFXManager::playTrue();
                 selectedDuration = 30; 
                 currentState = GameState::MENU_MODE; 
                 return; 
             }
             if (c == '3') { 
+                SFXManager::playTrue();
                 selectedDuration = 60; 
                 currentState = GameState::MENU_MODE; 
                 return; 
             }
             if (c == '5') { 
+                SFXManager::playTrue();
                 selectedDuration = -1; 
                 currentState = GameState::MENU_MODE; 
                 return; 
             }
             
+            // Toggle SFX dengan shortcut S
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
+            }
+            
             // Custom duration input
             if (c == '4') {
+                SFXManager::playTrue();
                 terminal.clear();
                 int w = terminal.getWidth(); 
                 int h = terminal.getHeight();
@@ -580,6 +634,7 @@ void GameEngine::handleMenuDuration() {
                 try {
                     int val = std::stoi(inp);
                     if (val > 0) {
+                        SFXManager::playTrue();
                         selectedDuration = val;
                         currentState = GameState::MENU_MODE;
                         return;
@@ -623,7 +678,7 @@ void GameEngine::handleMenuMode() {
             gameUI.printCentered(cy + 1, "[2] Campaign Mode");
             gameUI.printCentered(cy + 3, "(B) Back", Color::YELLOW);
 
-            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode, SFXManager::isEnabled());
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -632,18 +687,27 @@ void GameEngine::handleMenuMode() {
         if (terminal.hasInput()) {
             char c = terminal.getInput();
             if (c == 'b' || c == 'B') { 
+                SFXManager::playTrue();
                 currentState = GameState::MENU_DURATION; 
                 return; 
             }
             if (c == '1') { 
+                SFXManager::playTrue();
                 currentMode = "manual"; 
                 currentState = GameState::MENU_DIFFICULTY; 
                 return; 
             }
             if (c == '2') { 
+                SFXManager::playTrue();
                 currentMode = "campaign"; 
                 currentState = GameState::MENU_DIFFICULTY; 
                 return; 
+            }
+            // Toggle SFX dengan shortcut S
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -685,7 +749,7 @@ void GameEngine::handleMenuDifficulty() {
                 gameUI.printCentered(cy - 1, "Enter Target WPM:", Color::WHITE);
                 gameUI.printCentered(cy + 3, "(ESC) Back | (ENTER) Confirm", Color::YELLOW);
 
-                gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
+                gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode, SFXManager::isEnabled());
 
                 // Tampilkan input buffer
                 int inputX = cx - 10;
@@ -707,6 +771,7 @@ void GameEngine::handleMenuDifficulty() {
                 if (c == 10 || c == 13) {
                     terminal.hideCursor();
                     if (inputBuf.empty()) { 
+                        SFXManager::playTrue();
                         currentState = GameState::MENU_MODE; 
                         return; 
                     }
@@ -715,6 +780,7 @@ void GameEngine::handleMenuDifficulty() {
                     } catch (...) { 
                         targetWPM = 40; 
                     }
+                    SFXManager::playTrue();
                     currentDifficulty = Difficulty::MEDIUM;
                     currentState = GameState::PLAYING;
                     resetSession();
@@ -723,8 +789,15 @@ void GameEngine::handleMenuDifficulty() {
                 // ESC - Kembali
                 else if (c == 27) {
                     terminal.hideCursor();
+                    SFXManager::playTrue();
                     currentState = GameState::MENU_MODE;
                     return;
+                }
+                // Toggle SFX dengan shortcut S (hanya huruf S besar/kecil, bukan angka)
+                else if (c == 's' || c == 'S') {
+                    SFXManager::toggle();
+                    SFXManager::playFalse();
+                    lastW = 0; // Force redraw
                 }
                 // BACKSPACE - Hapus
                 else if (c == 127 || c == '\b' || c == 8) {
@@ -867,7 +940,7 @@ void GameEngine::handleMenuDifficulty() {
                 gameUI.printCentered(cy + 9, "(R) Reset Progress", Color::RED);
             }
 
-            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode);
+            gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode, SFXManager::isEnabled());
             
             // Flush setelah rendering selesai
             terminal.flush();
@@ -876,8 +949,17 @@ void GameEngine::handleMenuDifficulty() {
         if (terminal.hasInput()) {
             char d = terminal.getInput();
             
+            // Toggle SFX dengan shortcut S
+            if (d == 's' || d == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
+                continue;
+            }
+            
             // Restore bahasa saat user kembali dari menu
             if (d == 'b' || d == 'B') {
+                SFXManager::playTrue();
                 restoreLanguageFromProgrammerMode();
                 currentState = GameState::MENU_MODE; 
                 return; 
@@ -885,6 +967,7 @@ void GameEngine::handleMenuDifficulty() {
             
             // Shortcut ke Credits
             if (d == 'c' || d == 'C') {
+                SFXManager::playTrue();
                 previousState = GameState::MENU_DIFFICULTY;
                 currentState = GameState::CREDITS;
                 return;
@@ -920,6 +1003,7 @@ void GameEngine::handleMenuDifficulty() {
             }
 
             if (valid) {
+                SFXManager::playTrue();
                 currentState = GameState::PLAYING;
                 resetSession();
                 return;
@@ -993,8 +1077,9 @@ void GameEngine::renderGame() {
         timeStr = std::to_string(timeLimitSeconds);
     }
 
-    // Header info
-    std::string info = " MODE: " + currentMode + " | TIME: " + timeStr + "   ";
+    // Header info dengan SFX status
+    std::string sfxStatus = SFXManager::isEnabled() ? "On" : "Off";
+    std::string info = " MODE: " + currentMode + " | SFX: " + sfxStatus + " | TIME: " + timeStr;
     terminal.setCursor(cx - info.length()/2, 2);
     terminal.resetColor();
     terminal.print(info);
@@ -1233,6 +1318,7 @@ void GameEngine::processInput(char c) {
                 currentStats.correctKeystrokes++;
             } else {
                 currentStats.errors++;
+                SFXManager::playFalse(); // Play error sound
             }
             currentStats.totalKeystrokes++;
             cursorPosition++;
@@ -1565,24 +1651,36 @@ void GameEngine::showResults() {
                 gameUI.printCentered(cy + 2, msg, msgColor);
             }
 
-            gameUI.printCentered(cy + 5, "(C) Credits", Color::YELLOW);
+            // SFX status text dengan On/Off indicator
+            std::string sfxText = std::string("(C) Credits | (S) SFX: ") + (SFXManager::isEnabled() ? "On" : "Off");
+            gameUI.printCentered(cy + 5, sfxText, Color::YELLOW);
             gameUI.printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
             
             // Flush setelah rendering selesai
             terminal.flush();
         }
 
-        // Wait for ENTER or C
+        // Wait for ENTER or C or S
         if (terminal.hasInput()) {
             char c = terminal.getInput();
-            if (c == 10 || c == 13) break;
+            if (c == 10 || c == 13) {
+                SFXManager::playTrue();
+                break;
+            }
             if (c == 'c' || c == 'C') {
+                SFXManager::playTrue();
                 // CRITICAL: Set previousState ke MENU_DIFFICULTY, bukan RESULTS
                 // Mencegah infinite loop: results -> credits -> results
-                // Sekarang flow: results -> credits -> menu difficulty ✓
+                // Sekarang flow: results -> credits -> menu difficulty
                 previousState = GameState::MENU_DIFFICULTY;
                 currentState = GameState::CREDITS;
                 return;
+            }
+            // Toggle SFX
+            if (c == 's' || c == 'S') {
+                SFXManager::toggle();
+                SFXManager::playFalse();
+                lastW = 0; // Force redraw
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));

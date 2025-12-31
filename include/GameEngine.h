@@ -17,6 +17,7 @@
 #include "ProgressManager.h"
 #include "HistoryManager.h"
 #include "GameUI.h"
+#include "SFXManager.h"
 #include <string>
 #include <vector>
 #include <chrono>

@@ -32,8 +32,9 @@ public:
     
     /**
      * @brief Menggambar status bar di bawah layar
+     * @param sfxEnabled Status SFX (true = On, false = Off)
      */
-    void drawStatusBar(const std::string& language, int duration, const std::string& mode);
+    void drawStatusBar(const std::string& language, int duration, const std::string& mode, bool sfxEnabled = true);
     
     /**
      * @brief Mendapatkan input string dari user
