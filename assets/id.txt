@@ -46,7 +46,7 @@ kata
 masing-masing
 memberitahu
 tidak
-Kumpulan
+kumpulan
 tiga
 ingin
 udara
@@ -147,7 +147,7 @@ ada
 ketika
 naik
 penggunaan
-Anda
+anda
 cara
 tentang
 banyak
@@ -163,6 +163,8 @@ panjang
 membuat
 hal
 lihat
+hati-hati
+satu-satunya
 dia
 dua
 memiliki
@@ -229,7 +231,7 @@ laut
 menarik
 kiri
 terlambat
-Jumlah
+jumlah
 tidak
 sementara
 pers
@@ -334,7 +336,7 @@ atas
 seluruh
 raja
 jalan
-inch
+inci
 kalikan
 tidak ada
 tentu saja
@@ -382,7 +384,7 @@ timur
 cat
 bahasa
 antara
-Unit
+unit
 daya
 kota
 halus
@@ -428,7 +430,7 @@ di belakang
 jelas
 ekor
 menghasilkan
-Bahkan
+bahkan
 ruang
 mendengar
 terbaik
@@ -498,7 +500,7 @@ alasan
 panjang
 mewakili
 seni
-Subjek
+subjek
 wilayah
 ukuran
 bervariasi
@@ -617,7 +619,7 @@ jatuh
 cocok
 mengalir
 adil
-Bank
+bank
 mengumpulkan
 menyimpan
 kontrol
@@ -695,7 +697,7 @@ aman
 kucing
 abad
 pertimbangkan
-Jenis
+jenis
 hukum
 bit
 pantai
@@ -714,7 +716,7 @@ kebohongan
 mengalahkan
 menggairahkan
 alam
-Tampilan
+tampilan
 akal
 modal
 tidak akan
@@ -778,7 +780,7 @@ kerumunan
 jagung
 membandingkan
 puisi
-String
+senar
 tergantung
 daging
 menggosok
@@ -814,7 +816,7 @@ saat ini
 angkat
 naik
 tiba
-Master
+master
 jalur
 induk
 divisi
@@ -832,7 +834,7 @@ roti
 biaya
 tepat
 bar
-Penawaran
+penawaran
 ruas
 budak
 bebek
@@ -848,10 +850,10 @@ terjadi
 mendukung
 pidato
 alam
-Kisaran
+kisaran
 gerak
 cair
-login
+masuk
 berarti
 gigi
 leher
@@ -880,7 +882,7 @@ maju
 serupa
 panduan
 pengalaman
-Rata
+rata
 membeli
 dipimpin
 nada
@@ -889,7 +891,7 @@ massa
 kartu
 pita
 tali
-Slip
+slip
 menang
 mimpi
 malam
@@ -923,7 +925,7 @@ penyebaran
 mengatur
 menciptakan
 kapas
-Lahir
+lahir
 menentukan
 liter
 sembilan
