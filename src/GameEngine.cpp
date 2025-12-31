@@ -34,9 +34,6 @@ GameEngine::GameEngine()
       gameUI(terminal) { // Initialize gameUI dengan terminal reference
   terminal.initialize();
 
-  // Preload audio system untuk menghilangkan delay pada pemutaran pertama
-  SFXManager::preload();
-
   // Rick Roll sudah ditampilkan atau belum
   rickRollAlreadyShown = false;
 
