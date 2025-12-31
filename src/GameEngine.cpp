@@ -239,7 +239,7 @@ void GameEngine::handleMenuMain() {
       gameUI.printCentered(cy + 7, "(Q) Quit", Color::RED);
 
       // Status bar dengan SFX status
-      gameUI.drawStatusBar("", 0, "", SFXManager::isEnabled());
+      gameUI.drawStatusBar("", selectedDuration, "", SFXManager::isEnabled());
 
       terminal.flush();
     }

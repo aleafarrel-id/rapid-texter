@@ -12,8 +12,8 @@
 #include "SettingsManager.h"
 
 #ifdef _WIN32
-#include <mmsystem.h>
 #include <windows.h>
+#include <mmsystem.h>
 #else
 // Linux includes
 #include <cstdlib>
