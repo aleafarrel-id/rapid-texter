@@ -30,6 +30,7 @@
 struct HistoryEntry {
     double wpm;               ///< Words Per Minute
     double accuracy;          ///< Accuracy percentage (0-100)
+    int targetWPM;            ///< Target WPM untuk pass level
     int errors;               ///< Jumlah kesalahan
     std::string difficulty;   ///< Difficulty level ("Easy", "Medium", "Hard", "Programmer")
     std::string language;     ///< Bahasa yang digunakan ("ID", "EN", "PROG")
@@ -39,7 +40,7 @@ struct HistoryEntry {
     /**
      * @brief Constructor default
      */
-    HistoryEntry() : wpm(0), accuracy(0), errors(0) {}
+    HistoryEntry() : wpm(0), accuracy(0), targetWPM(0), errors(0) {}
 };
 
 /**

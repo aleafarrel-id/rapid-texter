@@ -169,6 +169,12 @@ public:
      * @brief Disable raw mode (restore normal mode)
      */
     void disableRawMode();
+    
+    /**
+     * @brief Check if Caps Lock is currently active
+     * @return true if Caps Lock is on, false otherwise
+     */
+    bool isCapsLockOn();
 
     // ========================================================================
     // Terminal Info

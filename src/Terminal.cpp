@@ -304,3 +304,26 @@ int Terminal::getHeight() {
     return w.ws_row;
 #endif
 }
+
+bool Terminal::isCapsLockOn() {
+#ifdef _WIN32
+    // GetKeyState returns the toggle state in the low-order bit
+    return (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
+#else
+    // Linux: Check LED state from /sys filesystem
+    FILE* fp = fopen("/sys/class/leds/input0::capslock/brightness", "r");
+    if (fp) {
+        int state = fgetc(fp);
+        fclose(fp);
+        return state == '1';
+    }
+    // Fallback: try alternative LED path
+    fp = fopen("/sys/class/leds/input1::capslock/brightness", "r");
+    if (fp) {
+        int state = fgetc(fp);
+        fclose(fp);
+        return state == '1';
+    }
+    return false; // Cannot determine, assume off
+#endif
+}

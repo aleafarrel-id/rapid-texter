@@ -375,6 +375,16 @@ bool HistoryManager::loadHistory() {
                 currentEntry.accuracy = std::atof(value.c_str());
             }
         }
+        // Parse "targetWPM" field (numeric int)
+        else if (line.find("\"targetWPM\"") != std::string::npos) {
+            size_t colonPos = line.find(":");
+            if (colonPos != std::string::npos) {
+                std::string value = line.substr(colonPos + 1);
+                value.erase(0, value.find_first_not_of(" \t"));
+                if (!value.empty() && value.back() == ',') value.pop_back();
+                currentEntry.targetWPM = std::atoi(value.c_str());
+            }
+        }
         // Parse "errors" field (numeric int)
         else if (line.find("\"errors\"") != std::string::npos) {
             size_t colonPos = line.find(":");
@@ -500,6 +510,7 @@ bool HistoryManager::saveHistory() {
         file << "    {\n";
         file << "      \"wpm\": " << entry.wpm << ",\n";
         file << "      \"accuracy\": " << entry.accuracy << ",\n";
+        file << "      \"targetWPM\": " << entry.targetWPM << ",\n";
         file << "      \"errors\": " << entry.errors << ",\n";
         file << "      \"difficulty\": \"" << escapeJsonString(entry.difficulty) << "\",\n";
         file << "      \"language\": \"" << escapeJsonString(entry.language) << "\",\n";

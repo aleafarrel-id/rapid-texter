@@ -304,7 +304,7 @@ void GameEngine::handleMenuHistory() {
       int cx = w / 2;
 
       // Box lebih besar untuk menampung data dengan rapi
-      int boxW = 85;
+      int boxW = 90;
       int boxH = 27;
       gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::YELLOW);
 
@@ -331,16 +331,16 @@ void GameEngine::handleMenuHistory() {
         // HEADER TABEL
         // ====================================================================
         int startY = cy - 5;
-        int startX = cx - 40; // Start dari kiri dengan padding
+        int startX = cx - 43; // Start dari kiri dengan padding
 
         terminal.setCursor(startX, startY);
         terminal.setColor(Color::CYAN);
 
         // Header dengan format yang konsisten dengan data
-        char headerLine[100];
+        char headerLine[110];
         snprintf(headerLine, sizeof(headerLine),
-                 "%-7s%-10s%-8s%-12s%-6s%-12s%s", "WPM", "Accuracy", "Errors",
-                 "Difficulty", "Lang", "Mode", "Date/Time");
+                 "%-7s%-10s%-12s%-8s%-12s%-6s%-10s%s", "WPM", "Accuracy", "Target-WPM",
+                 "Errors", "Difficulty", "Lang", "Mode", "Date/Time");
         terminal.print(headerLine);
 
         terminal.resetColor();
@@ -385,11 +385,24 @@ void GameEngine::handleMenuHistory() {
           if (modeStr.length() > 11)
             modeStr = modeStr.substr(0, 11);
 
+          // Format target WPM
+          char targetStr[10];
+          snprintf(targetStr, sizeof(targetStr), "%d", entry.targetWPM);
+
+          // Tentukan warna berdasarkan WPM vs Target
+          // Hijau jika WPM >= Target (pass), Merah jika kurang (fail)
+          if (entry.wpm >= entry.targetWPM) {
+            terminal.setColor(Color::GREEN);
+          } else {
+            terminal.setColor(Color::RED);
+          }
+
           // Print dengan format yang konsisten
-          snprintf(rowLine, sizeof(rowLine), "%-7s%-10s%-8d%-12s%-6s%-12s%s",
-                   wpmStr, accStr, entry.errors, diffStr.c_str(),
+          snprintf(rowLine, sizeof(rowLine), "%-7s%-10s%-12s%-8d%-12s%-6s%-10s%s",
+                   wpmStr, accStr, targetStr, entry.errors, diffStr.c_str(),
                    langStr.c_str(), modeStr.c_str(), entry.timestamp.c_str());
           terminal.print(rowLine);
+          terminal.resetColor();
         }
 
         // Garis pemisah bawah tabel (posisi setelah entry terakhir dengan
@@ -1278,11 +1291,20 @@ void GameEngine::renderGame() {
 
   terminal.resetColor();
 
-  // Instruksi awal
+  // Instruksi awal atau Caps Lock warning
   if (!isGameStarted) {
-    gameUI.printCentered(cy + 6, "Type to start...", Color::WHITE);
+    if (terminal.isCapsLockOn()) {
+      gameUI.printCentered(cy + 6, "  CAPS LOCK ON  ", Color::YELLOW);
+    } else {
+      gameUI.printCentered(cy + 6, "Type to start...", Color::WHITE);
+    }
   } else {
-    gameUI.printCentered(cy + 6, "                 ", Color::WHITE);
+    // Tetap tampilkan warning Caps Lock saat game berjalan
+    if (terminal.isCapsLockOn()) {
+      gameUI.printCentered(cy + 6, "  CAPS LOCK ON  ", Color::YELLOW);
+    } else {
+      gameUI.printCentered(cy + 6, "                ", Color::WHITE);
+    }
   }
 
   terminal.hideCursor();
@@ -1497,6 +1519,28 @@ void GameEngine::showResults() {
 
   // Format mode
   entry.mode = (currentMode == "manual") ? "Manual" : "Campaign";
+
+  // Format target WPM berdasarkan mode dan difficulty
+  if (currentMode == "manual") {
+    // Manual mode: target adalah WPM yang di-input user
+    entry.targetWPM = targetWPM;
+  } else {
+    // Campaign mode: target WPM untuk pass level
+    switch (currentDifficulty) {
+    case Difficulty::EASY:
+      entry.targetWPM = 40;
+      break;
+    case Difficulty::MEDIUM:
+      entry.targetWPM = 60;
+      break;
+    case Difficulty::HARD:
+      entry.targetWPM = 70;
+      break;
+    case Difficulty::PROGRAMMER:
+      entry.targetWPM = 50;
+      break;
+    }
+  }
 
   // Timestamp akan otomatis diset oleh HistoryManager
   entry.timestamp = ""; // akan di-set di saveEntry()
