@@ -8,14 +8,45 @@ flowchart LR
     %% === START ===
     START([🎮 START]):::startEnd
 
-    %% === MENU LANGUAGE ===
-    START --> MENU_LANG["📍 MENU_LANGUAGE<br/>Tampilkan Menu Pilihan Bahasa"]:::process
+    %% === MENU MAIN (NEW) ===
+    START --> MENU_MAIN["📍 MENU_MAIN<br/>Tampilkan Main Menu<br/>Start / History / Quit"]:::process
     
-    MENU_LANG --> LANG_INPUT[/"⌨️ Input: [1] ID , [2] EN , [Q] Quit"/]:::inputOutput
+    MENU_MAIN --> MAIN_INPUT[/"⌨️ Input: [1] Start , [2] History , [Q] Quit , [S] SFX"/]:::inputOutput
+    
+    MAIN_INPUT --> MAIN_DEC{"Tombol<br/>yang ditekan?"}:::decision
+    
+    MAIN_DEC -->|"Q"| EXIT([🔚 EXIT / END]):::startEnd
+    MAIN_DEC -->|"S"| TOGGLE_SFX["Toggle SFX On/Off"]:::process
+    TOGGLE_SFX --> MENU_MAIN
+    MAIN_DEC -->|"1"| MENU_LANG
+    MAIN_DEC -->|"2"| MENU_HISTORY
+
+    %% === MENU HISTORY (NEW) ===
+    MENU_HISTORY["📍 MENU_HISTORY<br/>Tampilkan History<br/>dengan Pagination"]:::process
+    
+    MENU_HISTORY --> HIST_INPUT[/"⌨️ Input: [N] Next , [P] Prev , [C] Clear , [B] Back"/]:::inputOutput
+    
+    HIST_INPUT --> HIST_DEC{"Tombol<br/>yang ditekan?"}:::decision
+    
+    HIST_DEC -->|"B / ESC"| MENU_MAIN
+    HIST_DEC -->|"N"| NEXT_PAGE["Next Page<br/>(jika ada)"]:::process
+    HIST_DEC -->|"P"| PREV_PAGE["Prev Page<br/>(jika ada)"]:::process
+    HIST_DEC -->|"C"| CLEAR_CONFIRM{"Konfirmasi<br/>Clear?"}:::decision
+    
+    NEXT_PAGE --> MENU_HISTORY
+    PREV_PAGE --> MENU_HISTORY
+    CLEAR_CONFIRM -->|"Ya"| CLEAR_HIST["Hapus Semua<br/>History"]:::process
+    CLEAR_CONFIRM -->|"Tidak"| MENU_HISTORY
+    CLEAR_HIST --> MENU_HISTORY
+
+    %% === MENU LANGUAGE ===
+    MENU_LANG["📍 MENU_LANGUAGE<br/>Tampilkan Menu Pilihan Bahasa"]:::process
+    
+    MENU_LANG --> LANG_INPUT[/"⌨️ Input: [1] ID , [2] EN , [B] Back , [S] SFX"/]:::inputOutput
     
     LANG_INPUT --> LANG_DEC{"Tombol<br/>yang ditekan?"}:::decision
     
-    LANG_DEC -->|"Q"| EXIT([🔚 EXIT / END]):::startEnd
+    LANG_DEC -->|"B"| MENU_MAIN
     LANG_DEC -->|"1 atau 2"| SET_LANG["Set Bahasa<br/>(ID atau EN)"]:::process
 
     %% === MENU DURATION ===
@@ -82,7 +113,8 @@ flowchart LR
     PROCESS_CHAR --> CHK_END{"Waktu Habis<br/>atau Selesai?"}:::decision
     
     CHK_END -->|"Tidak"| PLAYING
-    CHK_END -->|"Ya"| RESULTS
+    CHK_END -->|"Ya"| SAVE_HISTORY["Simpan ke History"]:::process
+    SAVE_HISTORY --> RESULTS
 
     %% === RESULTS STATE ===
     RESULTS["📍 RESULTS<br/>Tampilkan Statistik<br/>WPM, Accuracy, Time, Errors"]:::process
