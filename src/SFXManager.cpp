@@ -20,12 +20,9 @@
 #ifdef _WIN32
 // Windows headers already included in SFXManager.h
 #else
-// Linux includes
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <sys/wait.h>
-#include <unistd.h>
+// Linux: SDL2_mixer for audio pool
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #endif
 
 // ============================================================================
@@ -43,15 +40,19 @@ std::atomic<bool> SFXManager::buffersLoaded{false};
 std::atomic<bool> SFXManager::isLoading{false};
 
 // Audio pool
-std::array<HWAVEOUT, SFXManager::AUDIO_POOL_SIZE> SFXManager::waveOutHandles = {};
+std::array<HWAVEOUT, SFXManager::AUDIO_POOL_SIZE> SFXManager::waveOutHandles =
+    {};
 std::array<WAVEHDR, SFXManager::AUDIO_POOL_SIZE> SFXManager::waveHeaders = {};
-std::array<std::atomic<bool>, SFXManager::AUDIO_POOL_SIZE> SFXManager::channelBusy = {};
+std::array<std::atomic<bool>, SFXManager::AUDIO_POOL_SIZE>
+    SFXManager::channelBusy = {};
 std::atomic<int> SFXManager::nextChannel{0};
 
 #else
-// Linux
-std::string SFXManager::audioPlayer = "";
-bool SFXManager::audioPlayerDetected = false;
+// Linux: SDL2_mixer
+std::atomic<bool> SFXManager::sdlInitialized{false};
+std::atomic<bool> SFXManager::buffersLoaded{false};
+void *SFXManager::trueChunk = nullptr;
+void *SFXManager::falseChunk = nullptr;
 #endif
 
 // ============================================================================
@@ -65,17 +66,17 @@ bool SFXManager::audioPlayerDetected = false;
  * Menandai channel sebagai available untuk reuse
  */
 void CALLBACK SFXManager::waveOutCallback(HWAVEOUT hwo, UINT uMsg,
-                                           DWORD_PTR dwInstance,
-                                           DWORD_PTR dwParam1,
-                                           DWORD_PTR dwParam2) {
+                                          DWORD_PTR dwInstance,
+                                          DWORD_PTR dwParam1,
+                                          DWORD_PTR dwParam2) {
   if (uMsg == WOM_DONE) {
     // Channel index disimpan di dwInstance
     int channelIndex = static_cast<int>(dwInstance);
     if (channelIndex >= 0 && channelIndex < AUDIO_POOL_SIZE) {
       // Unprepare header
-      WAVEHDR* hdr = reinterpret_cast<WAVEHDR*>(dwParam1);
+      WAVEHDR *hdr = reinterpret_cast<WAVEHDR *>(dwParam1);
       waveOutUnprepareHeader(hwo, hdr, sizeof(WAVEHDR));
-      
+
       // Mark channel as available
       channelBusy[channelIndex].store(false, std::memory_order_release);
     }
@@ -84,10 +85,10 @@ void CALLBACK SFXManager::waveOutCallback(HWAVEOUT hwo, UINT uMsg,
 
 /**
  * @brief Load WAV file ke memory buffer
- * 
+ *
  * Membaca seluruh WAV file ke RAM. Format WAV harus standard PCM.
  */
-bool SFXManager::loadWavFile(const char* filename, std::vector<char>& buffer) {
+bool SFXManager::loadWavFile(const char *filename, std::vector<char> &buffer) {
   std::ifstream file(filename, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
     return false;
@@ -111,13 +112,14 @@ bool SFXManager::loadWavFile(const char* filename, std::vector<char>& buffer) {
  * Round-robin channel selection dengan fallback jika semua busy.
  * Audio diputar secara asynchronous - tidak blocking.
  */
-void SFXManager::playFromPool(const std::vector<char>& wavData) {
-  if (wavData.size() < 44) return; // Minimum WAV header size
+void SFXManager::playFromPool(const std::vector<char> &wavData) {
+  if (wavData.size() < 44)
+    return; // Minimum WAV header size
 
   // Parse WAV header untuk mendapatkan format
   // WAV structure: RIFF header (12 bytes) + fmt chunk + data chunk
-  const char* data = wavData.data();
-  
+  const char *data = wavData.data();
+
   // Verify RIFF header
   if (memcmp(data, "RIFF", 4) != 0 || memcmp(data + 8, "WAVE", 4) != 0) {
     return;
@@ -126,22 +128,22 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
   // Find fmt chunk
   int pos = 12;
   WAVEFORMATEX wfx = {};
-  const char* audioData = nullptr;
+  const char *audioData = nullptr;
   DWORD audioSize = 0;
 
   while (pos < static_cast<int>(wavData.size()) - 8) {
     char chunkId[5] = {0};
     memcpy(chunkId, data + pos, 4);
-    DWORD chunkSize = *reinterpret_cast<const DWORD*>(data + pos + 4);
+    DWORD chunkSize = *reinterpret_cast<const DWORD *>(data + pos + 4);
 
     if (memcmp(chunkId, "fmt ", 4) == 0) {
       // Parse format chunk
-      wfx.wFormatTag = *reinterpret_cast<const WORD*>(data + pos + 8);
-      wfx.nChannels = *reinterpret_cast<const WORD*>(data + pos + 10);
-      wfx.nSamplesPerSec = *reinterpret_cast<const DWORD*>(data + pos + 12);
-      wfx.nAvgBytesPerSec = *reinterpret_cast<const DWORD*>(data + pos + 16);
-      wfx.nBlockAlign = *reinterpret_cast<const WORD*>(data + pos + 20);
-      wfx.wBitsPerSample = *reinterpret_cast<const WORD*>(data + pos + 22);
+      wfx.wFormatTag = *reinterpret_cast<const WORD *>(data + pos + 8);
+      wfx.nChannels = *reinterpret_cast<const WORD *>(data + pos + 10);
+      wfx.nSamplesPerSec = *reinterpret_cast<const DWORD *>(data + pos + 12);
+      wfx.nAvgBytesPerSec = *reinterpret_cast<const DWORD *>(data + pos + 16);
+      wfx.nBlockAlign = *reinterpret_cast<const WORD *>(data + pos + 20);
+      wfx.wBitsPerSample = *reinterpret_cast<const WORD *>(data + pos + 22);
       wfx.cbSize = 0;
     } else if (memcmp(chunkId, "data", 4) == 0) {
       audioData = data + pos + 8;
@@ -150,10 +152,12 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
     }
 
     pos += 8 + chunkSize;
-    if (chunkSize % 2 == 1) pos++; // Padding
+    if (chunkSize % 2 == 1)
+      pos++; // Padding
   }
 
-  if (!audioData || audioSize == 0) return;
+  if (!audioData || audioSize == 0)
+    return;
 
   // Find available channel (round-robin with busy check)
   int startChannel = nextChannel.load(std::memory_order_relaxed);
@@ -187,14 +191,10 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
   }
 
   // Open new waveOut device
-  MMRESULT result = waveOutOpen(
-    &waveOutHandles[channel],
-    WAVE_MAPPER,
-    &wfx,
-    reinterpret_cast<DWORD_PTR>(waveOutCallback),
-    static_cast<DWORD_PTR>(channel),
-    CALLBACK_FUNCTION
-  );
+  MMRESULT result =
+      waveOutOpen(&waveOutHandles[channel], WAVE_MAPPER, &wfx,
+                  reinterpret_cast<DWORD_PTR>(waveOutCallback),
+                  static_cast<DWORD_PTR>(channel), CALLBACK_FUNCTION);
 
   if (result != MMSYSERR_NOERROR) {
     channelBusy[channel].store(false, std::memory_order_release);
@@ -207,9 +207,8 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
   waveHeaders[channel].dwBufferLength = audioSize;
   waveHeaders[channel].dwFlags = 0;
 
-  result = waveOutPrepareHeader(waveOutHandles[channel], 
-                                 &waveHeaders[channel], 
-                                 sizeof(WAVEHDR));
+  result = waveOutPrepareHeader(waveOutHandles[channel], &waveHeaders[channel],
+                                sizeof(WAVEHDR));
   if (result != MMSYSERR_NOERROR) {
     waveOutClose(waveOutHandles[channel]);
     waveOutHandles[channel] = nullptr;
@@ -218,12 +217,10 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
   }
 
   // Play!
-  result = waveOutWrite(waveOutHandles[channel], 
-                        &waveHeaders[channel], 
+  result = waveOutWrite(waveOutHandles[channel], &waveHeaders[channel],
                         sizeof(WAVEHDR));
   if (result != MMSYSERR_NOERROR) {
-    waveOutUnprepareHeader(waveOutHandles[channel], 
-                           &waveHeaders[channel], 
+    waveOutUnprepareHeader(waveOutHandles[channel], &waveHeaders[channel],
                            sizeof(WAVEHDR));
     waveOutClose(waveOutHandles[channel]);
     waveOutHandles[channel] = nullptr;
@@ -233,33 +230,39 @@ void SFXManager::playFromPool(const std::vector<char>& wavData) {
 
 #else
 // ============================================================================
-// LINUX: Fork-based async playback (unchanged)
+// LINUX: SDL2_mixer Audio Pool (mirrors Windows waveOut approach)
 // ============================================================================
 
-std::string SFXManager::detectAudioPlayer() {
-  if (system("which paplay > /dev/null 2>&1") == 0) {
-    return "paplay";
+bool SFXManager::initSDL() {
+  if (sdlInitialized.load(std::memory_order_acquire)) {
+    return true;
   }
-  if (system("which aplay > /dev/null 2>&1") == 0) {
-    return "aplay -q";
+
+  // Initialize SDL audio subsystem only
+  if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+    return false;
   }
-  return "";
+
+  // Open audio with 8 channels for overlapping
+  // 44100 Hz, 16-bit, stereo, 1024 sample buffer
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
+    SDL_Quit();
+    return false;
+  }
+
+  // Allocate 8 mixing channels (same as Windows AUDIO_POOL_SIZE)
+  Mix_AllocateChannels(8);
+
+  sdlInitialized.store(true, std::memory_order_release);
+  return true;
 }
 
-void SFXManager::playAudioLinux(const char *filename) {
-  if (audioPlayer.empty()) return;
-
-  pid_t pid = fork();
-  if (pid == 0) {
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
-    std::string cmd = audioPlayer + " " + filename;
-    execl("/bin/sh", "sh", "-c", cmd.c_str(), (char *)NULL);
-    _exit(1);
+void SFXManager::playChunk(void *chunk) {
+  if (!chunk || !sdlInitialized.load(std::memory_order_acquire)) {
+    return;
   }
-  if (pid > 0) {
-    signal(SIGCHLD, SIG_IGN);
-  }
+  // -1 = first available channel, 0 = no loop
+  Mix_PlayChannel(-1, static_cast<Mix_Chunk *>(chunk), 0);
 }
 #endif
 
@@ -268,26 +271,32 @@ void SFXManager::playAudioLinux(const char *filename) {
 // ============================================================================
 
 void SFXManager::playTrue() {
-  if (!sfxEnabled) return;
+  if (!sfxEnabled)
+    return;
 
 #ifdef _WIN32
   if (buffersLoaded.load(std::memory_order_acquire) && !trueWavData.empty()) {
     playFromPool(trueWavData);
   }
 #else
-  playAudioLinux("assets/true.wav");
+  if (buffersLoaded.load(std::memory_order_acquire) && trueChunk) {
+    playChunk(trueChunk);
+  }
 #endif
 }
 
 void SFXManager::playFalse() {
-  if (!sfxEnabled) return;
+  if (!sfxEnabled)
+    return;
 
 #ifdef _WIN32
   if (buffersLoaded.load(std::memory_order_acquire) && !falseWavData.empty()) {
     playFromPool(falseWavData);
   }
 #else
-  playAudioLinux("assets/false.wav");
+  if (buffersLoaded.load(std::memory_order_acquire) && falseChunk) {
+    playChunk(falseChunk);
+  }
 #endif
 }
 
@@ -318,7 +327,8 @@ bool SFXManager::isEnabled() {
 void SFXManager::preload() {
 #ifdef _WIN32
   // Check if already loaded or loading
-  if (buffersLoaded.load(std::memory_order_acquire) || isLoading.load(std::memory_order_acquire)) {
+  if (buffersLoaded.load(std::memory_order_acquire) ||
+      isLoading.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -335,7 +345,7 @@ void SFXManager::preload() {
     std::vector<char> tData, fData;
     bool tLoaded = loadWavFile("assets\\true.wav", tData);
     bool fLoaded = loadWavFile("assets\\false.wav", fData);
-    
+
     if (tLoaded && fLoaded) {
       trueWavData = std::move(tData);
       falseWavData = std::move(fData);
@@ -345,9 +355,21 @@ void SFXManager::preload() {
   }).detach();
 
 #else
-  if (!audioPlayerDetected) {
-    audioPlayer = detectAudioPlayer();
-    audioPlayerDetected = true;
+  // Linux: Initialize SDL and load audio chunks
+  if (buffersLoaded.load(std::memory_order_acquire)) {
+    return;
+  }
+
+  if (!initSDL()) {
+    return;
+  }
+
+  // Load audio files
+  trueChunk = Mix_LoadWAV("assets/true.wav");
+  falseChunk = Mix_LoadWAV("assets/false.wav");
+
+  if (trueChunk && falseChunk) {
+    buffersLoaded.store(true, std::memory_order_release);
   }
 #endif
 }
@@ -358,7 +380,8 @@ void SFXManager::cleanup() {
   for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
     if (waveOutHandles[i]) {
       waveOutReset(waveOutHandles[i]);
-      waveOutUnprepareHeader(waveOutHandles[i], &waveHeaders[i], sizeof(WAVEHDR));
+      waveOutUnprepareHeader(waveOutHandles[i], &waveHeaders[i],
+                             sizeof(WAVEHDR));
       waveOutClose(waveOutHandles[i]);
       waveOutHandles[i] = nullptr;
     }
@@ -370,6 +393,22 @@ void SFXManager::cleanup() {
   falseWavData.clear();
   falseWavData.shrink_to_fit();
   buffersLoaded.store(false, std::memory_order_release);
+#else
+  // Linux: Cleanup SDL resources
+  if (trueChunk) {
+    Mix_FreeChunk(static_cast<Mix_Chunk *>(trueChunk));
+    trueChunk = nullptr;
+  }
+  if (falseChunk) {
+    Mix_FreeChunk(static_cast<Mix_Chunk *>(falseChunk));
+    falseChunk = nullptr;
+  }
+
+  if (sdlInitialized.load(std::memory_order_acquire)) {
+    Mix_CloseAudio();
+    SDL_Quit();
+    sdlInitialized.store(false, std::memory_order_release);
+  }
+  buffersLoaded.store(false, std::memory_order_release);
 #endif
 }
-

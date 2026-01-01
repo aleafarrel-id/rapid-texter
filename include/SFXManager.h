@@ -5,7 +5,7 @@
  * @date 2025
  *
  * Mengelola pemutaran sound effects (SFX) dengan fitur toggle on/off.
- * 
+ *
  * OVERLAPPING AUDIO SUPPORT:
  * - Menggunakan waveOut API dengan audio pool untuk Windows
  * - Memungkinkan multiple audio instances bermain bersamaan
@@ -15,11 +15,11 @@
 #ifndef SFXMANAGER_H
 #define SFXMANAGER_H
 
+#include <array>
+#include <atomic>
 #include <csignal>
 #include <string>
 #include <vector>
-#include <array>
-#include <atomic>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -83,45 +83,49 @@ private:
   // ============================================================================
   // AUDIO POOL SYSTEM (Industry Standard: Polyphonic Audio)
   // ============================================================================
-  
+
   /// Jumlah audio channels dalam pool (memungkinkan N overlapping sounds)
   static constexpr int AUDIO_POOL_SIZE = 8;
-  
+
   /// WAV data buffers (pre-loaded di memory)
   static std::vector<char> trueWavData;
   static std::vector<char> falseWavData;
   static std::atomic<bool> buffersLoaded;
   static std::atomic<bool> isLoading;
-  
+
   /// Audio output devices pool
   static std::array<HWAVEOUT, AUDIO_POOL_SIZE> waveOutHandles;
   static std::array<WAVEHDR, AUDIO_POOL_SIZE> waveHeaders;
   static std::array<std::atomic<bool>, AUDIO_POOL_SIZE> channelBusy;
   static std::atomic<int> nextChannel;
-  
+
   /**
    * @brief Load WAV file ke memory buffer
    */
-  static bool loadWavFile(const char* filename, std::vector<char>& buffer);
-  
+  static bool loadWavFile(const char *filename, std::vector<char> &buffer);
+
   /**
    * @brief Play audio dari buffer menggunakan available channel dari pool
    */
-  static void playFromPool(const std::vector<char>& wavData);
-  
+  static void playFromPool(const std::vector<char> &wavData);
+
   /**
    * @brief Callback saat audio selesai diputar
    */
-  static void CALLBACK waveOutCallback(HWAVEOUT hwo, UINT uMsg, 
-                                        DWORD_PTR dwInstance,
-                                        DWORD_PTR dwParam1, 
-                                        DWORD_PTR dwParam2);
+  static void CALLBACK waveOutCallback(HWAVEOUT hwo, UINT uMsg,
+                                       DWORD_PTR dwInstance, DWORD_PTR dwParam1,
+                                       DWORD_PTR dwParam2);
 #else
-  // Linux-specific members
-  static std::string audioPlayer;
-  static bool audioPlayerDetected;
-  static std::string detectAudioPlayer();
-  static void playAudioLinux(const char *filename);
+  // Linux: SDL2_mixer audio pool (mirrors Windows waveOut approach)
+  static std::atomic<bool> sdlInitialized;
+  static std::atomic<bool> buffersLoaded;
+
+  // Pre-loaded audio chunks (use void* to avoid SDL header in .h)
+  static void *trueChunk;
+  static void *falseChunk;
+
+  static bool initSDL();
+  static void playChunk(void *chunk);
 #endif
 };
 

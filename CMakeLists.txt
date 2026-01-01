@@ -49,7 +49,18 @@ if(WIN32)
 
 elseif(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
-    target_link_libraries(RapidTexter PRIVATE Threads::Threads)
+    
+    # SDL2 and SDL2_mixer for audio pool (overlapping audio support)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SDL2 REQUIRED sdl2)
+    pkg_check_modules(SDL2_MIXER REQUIRED SDL2_mixer)
+    
+    target_include_directories(RapidTexter PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_MIXER_INCLUDE_DIRS})
+    target_link_libraries(RapidTexter PRIVATE 
+        Threads::Threads 
+        ${SDL2_LIBRARIES} 
+        ${SDL2_MIXER_LIBRARIES}
+    )
 endif()
 
 # ------------------------------------------------------------------------------
