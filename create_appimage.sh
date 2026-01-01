@@ -13,11 +13,17 @@ BUILD_DIR="$PROJECT_ROOT/build_linux"
 # Set source icon ke file .png
 ICON_SOURCE="resources/app_icon.png" 
 
-# 2. Cek tool AppImage
+# 2. Cek tool AppImage & LinuxDeploy
 if [ ! -f "appimagetool-x86_64.AppImage" ]; then
     echo "Downloading appimagetool..."
     wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
     chmod +x appimagetool-x86_64.AppImage
+fi
+
+if [ ! -f "linuxdeploy-x86_64.AppImage" ]; then
+    echo "Downloading linuxdeploy..."
+    wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+    chmod +x linuxdeploy-x86_64.AppImage
 fi
 
 # 3. Build Project dengan CMake
@@ -39,10 +45,11 @@ mkdir -p "$APP_DIR/usr/share/icons/hicolor/256x256/apps"
 echo "Copying executable and assets..."
 
 # Cari executable (bisa bernama RapidTexter atau rapid-texter)
+EXE_NAME="rapid-texter"
 if [ -f "$BUILD_DIR/RapidTexter" ]; then
-    cp "$BUILD_DIR/RapidTexter" "$APP_DIR/usr/bin/rapid-texter"
+    cp "$BUILD_DIR/RapidTexter" "$APP_DIR/usr/bin/$EXE_NAME"
 elif [ -f "$BUILD_DIR/rapid-texter" ]; then
-    cp "$BUILD_DIR/rapid-texter" "$APP_DIR/usr/bin/rapid-texter"
+    cp "$BUILD_DIR/rapid-texter" "$APP_DIR/usr/bin/$EXE_NAME"
 else
     echo "ERROR: Executable binary not found!"
     exit 1
@@ -56,19 +63,11 @@ echo "Setting up icon from $ICON_SOURCE..."
 
 if [ -f "$ICON_SOURCE" ]; then
     echo "Found icon: $ICON_SOURCE"
-    
-    # A. Copy ke root AppDir dengan nama ASLI 'app_icon.png'
     cp "$ICON_SOURCE" "$APP_DIR/app_icon.png"
-    
-    # B. Copy sebagai .DirIcon (Tetap wajib agar file AppImage punya icon)
     cp "$ICON_SOURCE" "$APP_DIR/.DirIcon"
-    
-    # C. Copy ke folder standar Linux icons
     cp "$ICON_SOURCE" "$APP_DIR/usr/share/icons/hicolor/256x256/apps/app_icon.png"
 else
     echo "WARNING: $ICON_SOURCE tidak ditemukan!"
-    echo "Pastikan file 'app_icon.png' ada di dalam folder 'resources/'."
-    echo "Menggunakan icon dummy merah sementara..."
     echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" | base64 -d > "$APP_DIR/app_icon.png"
     cp "$APP_DIR/app_icon.png" "$APP_DIR/.DirIcon"
 fi
@@ -80,15 +79,20 @@ cat > "$APP_DIR/rapid-texter.desktop" <<EOF
 Type=Application
 Name=Rapid Texter
 Comment=Terminal-based typing speed game
-Exec=rapid-texter
+Exec=$EXE_NAME
 Icon=app_icon
 Categories=Game;
 Terminal=true
 EOF
 
-# 8. Buat AppRun (SMART LAUNCHER UPDATE)
-# Script ini sekarang akan otomatis membuka terminal jika di-double click
-echo "Creating AppRun script..."
+# 8. BUNDLE DEPENDENCIES (New Step)
+echo "Bundling dependencies with linuxdeploy..."
+# Kita gunakan linuxdeploy hanya untuk copy library ke usr/lib
+./linuxdeploy-x86_64.AppImage --appdir "$APP_DIR" --executable "$APP_DIR/usr/bin/$EXE_NAME" --desktop-file "$APP_DIR/rapid-texter.desktop" --icon-file "$ICON_SOURCE"
+
+# 9. Buat AppRun (SMART LAUNCHER UPDATE)
+# Script ini menimpa AppRun generik dari linuxdeploy agar bisa handle terminal logic
+echo "Creating custom AppRun script..."
 cat > "$APP_DIR/AppRun" <<\EOF
 #!/bin/bash
 
@@ -96,6 +100,10 @@ cat > "$APP_DIR/AppRun" <<\EOF
 run_game() {
     # Cari lokasi script ini berada
     HERE="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+    
+    # SETUP LIBRARY PATH (PENTING AGAR LIBRARY TERBUNDLE TERBACA)
+    export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"
+    
     cd "${HERE}/usr/bin"
     ./rapid-texter "$@"
 }
@@ -108,13 +116,9 @@ else
     # TIDAK, ini dijalankan dari GUI (Double Click) -> Buka terminal dulu!
     
     # Ambil lokasi file AppImage ini sendiri
-    # $APPIMAGE adalah variabel environment dari runtime AppImage
     TARGET="$APPIMAGE"
-    
-    # Fallback jika variabel kosong (misal saat testing manual)
     if [ -z "$TARGET" ]; then TARGET="$0"; fi
 
-    # Coba cari terminal emulator yang ada di sistem user
     if command -v gnome-terminal &> /dev/null; then
         gnome-terminal -- "$TARGET" "$@"
     elif command -v konsole &> /dev/null; then
@@ -126,8 +130,6 @@ else
     elif command -v xterm &> /dev/null; then
         xterm -e "$TARGET" "$@"
     else
-        # Jika tidak ada terminal yang dikenal, coba jalankan langsung (fallback)
-        # Siapa tahu user punya setup khusus
         run_game "$@"
     fi
 fi
