@@ -419,7 +419,7 @@ void GameEngine::handleMenuHistory() {
       }
 
       // Menu footer
-      gameUI.printCentered(cy + 11, "(B) Back", Color::YELLOW);
+      gameUI.printCentered(cy + 11, "(ESC) Back", Color::YELLOW);
       if (totalEntries > 0) {
         gameUI.printCentered(cy + 12, "(C) Clear History", Color::RED);
       }
@@ -435,8 +435,22 @@ void GameEngine::handleMenuHistory() {
     if (terminal.hasInput()) {
       char c = terminal.getInput();
 
-      if (c == 'b' || c == 'B') {
+      if (c == 27) { // ESC key
         SFXManager::playTrue();
+        // Kembali ke state sebelumnya sesuai previousState (jika dari Results)
+        if (previousState == GameState::MENU_DIFFICULTY || 
+            previousState == GameState::RESULTS) {
+          // Campaign mode: kembali ke difficulty selection
+          currentState = GameState::MENU_DIFFICULTY;
+          previousState = GameState::MENU_MAIN; // Reset previousState
+          return;
+        } else if (previousState == GameState::MENU_MODE) {
+          // Manual mode: kembali ke input WPM (menu difficulty di manual = input WPM)
+          currentState = GameState::MENU_DIFFICULTY;
+          previousState = GameState::MENU_MAIN; // Reset previousState
+          return;
+        }
+        // Default: kembali ke menu utama
         currentState = GameState::MENU_MAIN;
         return;
       }
@@ -520,7 +534,7 @@ void GameEngine::handleMenuLanguage() {
       gameUI.printCentered(cy - 5, "SELECT LANGUAGE", Color::CYAN);
       gameUI.printCentered(cy - 1, "[1] Indonesia (ID)");
       gameUI.printCentered(cy + 0, "[2] English (EN)");
-      gameUI.printCentered(cy + 4, "(B) Back", Color::YELLOW);
+      gameUI.printCentered(cy + 4, "(ESC) Back", Color::YELLOW);
 
       gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode,
                            SFXManager::isEnabled());
@@ -532,9 +546,9 @@ void GameEngine::handleMenuLanguage() {
     // Handle input
     if (terminal.hasInput()) {
       char c = terminal.getInput();
-      if (c == 'b' || c == 'B') {
+      if (c == 27) { // ESC key - Kembali ke menu utama
         SFXManager::playTrue();
-        currentState = GameState::MENU_MAIN; // Kembali ke menu utama
+        currentState = GameState::MENU_MAIN;
         return;
       }
       if (c == '1') {
@@ -610,7 +624,7 @@ void GameEngine::handleMenuDuration() {
       }
       gameUI.printCentered(cy + 4, defaultText, Color::GREEN);
 
-      gameUI.printCentered(cy + 5, "(B) Back", Color::YELLOW);
+      gameUI.printCentered(cy + 5, "(ESC) Back", Color::YELLOW);
 
       gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode,
                            SFXManager::isEnabled());
@@ -621,7 +635,7 @@ void GameEngine::handleMenuDuration() {
 
     if (terminal.hasInput()) {
       char c = terminal.getInput();
-      if (c == 'b' || c == 'B') {
+      if (c == 27) { // ESC key
         SFXManager::playTrue();
         currentState = GameState::MENU_LANGUAGE;
         return;
@@ -739,7 +753,7 @@ void GameEngine::handleMenuMode() {
       gameUI.printCentered(cy - 4, "SELECT MODE", Color::GREEN);
       gameUI.printCentered(cy, "[1] Manual Mode");
       gameUI.printCentered(cy + 1, "[2] Campaign Mode");
-      gameUI.printCentered(cy + 3, "(B) Back", Color::YELLOW);
+      gameUI.printCentered(cy + 3, "(ESC) Back", Color::YELLOW);
 
       gameUI.drawStatusBar(currentLanguage, selectedDuration, currentMode,
                            SFXManager::isEnabled());
@@ -750,7 +764,7 @@ void GameEngine::handleMenuMode() {
 
     if (terminal.hasInput()) {
       char c = terminal.getInput();
-      if (c == 'b' || c == 'B') {
+      if (c == 27) { // ESC key
         SFXManager::playTrue();
         currentState = GameState::MENU_DURATION;
         return;
@@ -1028,7 +1042,7 @@ void GameEngine::handleMenuDifficulty() {
                              Color::CYAN);
       }
 
-      gameUI.printCentered(cy + 8, "(B) Back | (C) Credits", Color::YELLOW);
+      gameUI.printCentered(cy + 8, "(ESC) Back | (C) Credits", Color::YELLOW);
       // Reset progress hanya muncul jika Easy sudah selesai
       if (progressManager.isCompleted(currentLanguage, Difficulty::EASY)) {
         gameUI.printCentered(cy + 9, "(R) Reset Progress", Color::RED);
@@ -1053,7 +1067,7 @@ void GameEngine::handleMenuDifficulty() {
       }
 
       // Restore bahasa saat user kembali dari menu
-      if (d == 'b' || d == 'B') {
+      if (d == 27) { // ESC key
         SFXManager::playTrue();
         restoreLanguageFromProgrammerMode();
         currentState = GameState::MENU_MODE;
@@ -1170,12 +1184,13 @@ void GameEngine::renderGame() {
       int elapsed =
           std::chrono::duration_cast<std::chrono::seconds>(now - startTime)
               .count();
-      timeStr = std::to_string(elapsed) + "s";
+      timeStr = std::to_string(elapsed) + "s  "; // Padding untuk elapsed time
     } else {
       timeStr = "Inf";
     }
   } else {
-    timeStr = std::to_string(timeLimitSeconds);
+    // Padding spasi untuk menimpa digit lama (misal: "9  " mengganti "10")
+    timeStr = std::to_string(timeLimitSeconds) + "  ";
   }
 
   // Header info dengan SFX status
@@ -1819,7 +1834,8 @@ void GameEngine::showResults() {
       std::string sfxText = std::string("(C) Credits | (S) SFX: ") +
                             (SFXManager::isEnabled() ? "On" : "Off");
       gameUI.printCentered(cy + 5, sfxText, Color::YELLOW);
-      gameUI.printCentered(cy + 6, "Press ENTER to continue", Color::WHITE);
+      gameUI.printCentered(cy + 6, "(H) Show History", Color::YELLOW);
+      gameUI.printCentered(cy + 7, "Press ENTER to continue", Color::WHITE);
 
       // Flush setelah rendering selesai
       terminal.flush();
@@ -1846,6 +1862,18 @@ void GameEngine::showResults() {
         SFXManager::toggle();
         SFXManager::playFalse();
         lastW = 0; // Force redraw
+      }
+      // Show History dari Results
+      if (c == 'h' || c == 'H') {
+        SFXManager::playTrue();
+        // Set previousState berdasarkan mode untuk kembali ke tempat yang sesuai
+        if (currentMode == "manual") {
+          previousState = GameState::MENU_MODE; // Marker untuk kembali ke input WPM
+        } else {
+          previousState = GameState::MENU_DIFFICULTY; // Marker untuk kembali ke difficulty
+        }
+        currentState = GameState::MENU_HISTORY;
+        return;
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
