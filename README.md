@@ -23,6 +23,14 @@
 * **🚀 Ringan:** Tanpa GUI berat, berjalan instan di terminal apa saja.
 * **🎵 Easter Egg:** Temukan kejutan fitur rahasia yang tersembunyi di dalam folder `roll/`.
 
+---
+
+### Diagram Alur Aplikasi
+
+![Flow Chart](https://github.com/aleafarrel-id/rapid-texter/blob/main/documentation/flow_simple.png)
+
+---
+
 ## 🛠️ Cara Compile & Jalankan
 
 Project ini menggunakan **CMake** untuk mempermudah proses instalasi. Anda tidak perlu repot membuat folder build secara manual. Hasil compile akan langsung muncul di folder ini.
