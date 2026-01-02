@@ -63,14 +63,15 @@ bundle_library() {
     local lib="$1"
     local libname=$(basename "$lib")
     
-    # Skip jika sudah ada atau blacklisted
+    # Skip jika sudah ada
     if [ -f "$APP_DIR/usr/lib/$libname" ]; then
         return
     fi
     
-    # Blacklist glibc core dan system libraries
+    # Blacklist HANYA glibc core yang SANGAT terikat kernel
+    # PENTING: libstdc++ dan libgcc_s TIDAK diblacklist agar kompatibel antar distro
     case "$libname" in
-        libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*.so*|libgcc_s.so*|libstdc++.so*)
+        libc.so*|libm.so*|libpthread.so*|libdl.so*|librt.so*|ld-linux*.so*)
             return
             ;;
         # Blacklist libraries yang sangat terikat dengan sistem
@@ -98,8 +99,85 @@ for lib in $(ldd "$EXECUTABLE" | grep "=> /" | awk '{print $3}'); do
     bundle_library "$lib"
 done
 
-# Bundle dependencies dari library yang sudah di-copy (untuk memastikan lengkap)
-echo "Scanning dependencies from bundled libraries..."
+# Multiple pass untuk memastikan SEMUA dependencies ter-bundle
+# Fedora kadang punya chain dependencies yang lebih panjang
+echo "Scanning dependencies from bundled libraries (pass 1)..."
+for bundled_lib in "$APP_DIR/usr/lib/"*.so*; do
+    if [ -f "$bundled_lib" ]; then
+        for lib in $(ldd "$bundled_lib" 2>/dev/null | grep "=> /" | awk '{print $3}'); do
+            bundle_library "$lib"
+        done
+    fi
+done
+
+echo "Scanning dependencies from bundled libraries (pass 2)..."
+for bundled_lib in "$APP_DIR/usr/lib/"*.so*; do
+    if [ -f "$bundled_lib" ]; then
+        for lib in $(ldd "$bundled_lib" 2>/dev/null | grep "=> /" | awk '{print $3}'); do
+            bundle_library "$lib"
+        done
+    fi
+done
+
+echo "Scanning dependencies from bundled libraries (pass 3)..."
+for bundled_lib in "$APP_DIR/usr/lib/"*.so*; do
+    if [ -f "$bundled_lib" ]; then
+        for lib in $(ldd "$bundled_lib" 2>/dev/null | grep "=> /" | awk '{print $3}'); do
+            bundle_library "$lib"
+        done
+    fi
+done
+
+# Explicit bundling untuk SDL2 plugins dan codec libraries
+# yang mungkin tidak terdeteksi oleh ldd karena di-dlopen() saat runtime
+echo "Bundling SDL2_mixer codec plugins..."
+SDL2_MIXER_PATHS=(
+    "/usr/lib64"
+    "/usr/lib/x86_64-linux-gnu"
+    "/usr/lib"
+)
+
+# Daftar library codec yang biasa dipakai SDL2_mixer
+CODEC_LIBS=(
+    "libFLAC.so*"
+    "libflac.so*"
+    "libvorbis.so*"
+    "libvorbisfile.so*"
+    "libvorbisenc.so*"
+    "libogg.so*"
+    "libopus.so*"
+    "libopusfile.so*"
+    "libmpg123.so*"
+    "libmodplug.so*"
+    "libfluidsynth.so*"
+    "libasound.so*"
+    "libpulse*.so*"
+    "libsndfile.so*"
+    "libsamplerate.so*"
+    "libwayland*.so*"
+    "libxkbcommon.so*"
+    "libdrm.so*"
+    "libgbm.so*"
+    "libEGL.so*"
+    "libGL.so*"
+    "libGLX.so*"
+    "libGLdispatch.so*"
+)
+
+for search_path in "${SDL2_MIXER_PATHS[@]}"; do
+    if [ -d "$search_path" ]; then
+        for pattern in "${CODEC_LIBS[@]}"; do
+            for lib in $search_path/$pattern; do
+                if [ -f "$lib" ]; then
+                    bundle_library "$lib"
+                fi
+            done
+        done
+    fi
+done
+
+# Pass final untuk dependencies dari codec libraries
+echo "Final pass for codec dependencies..."
 for bundled_lib in "$APP_DIR/usr/lib/"*.so*; do
     if [ -f "$bundled_lib" ]; then
         for lib in $(ldd "$bundled_lib" 2>/dev/null | grep "=> /" | awk '{print $3}'); do
