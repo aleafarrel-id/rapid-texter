@@ -1,7 +1,7 @@
 /**
  * @file Terminal.cpp
  * @brief Implementasi cross-platform terminal manipulation wrapper
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * File ini mengimplementasikan class Terminal yang menyediakan abstraksi

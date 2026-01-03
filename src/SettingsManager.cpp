@@ -1,7 +1,7 @@
 /**
  * @file SettingsManager.cpp
  * @brief Implementasi Settings Manager untuk penyimpanan pengaturan user
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * File ini mengimplementasikan class SettingsManager yang bertanggung jawab

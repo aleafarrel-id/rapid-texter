@@ -1,7 +1,7 @@
 /**
  * @file SFXManager.h
  * @brief Sound Effects Manager untuk Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * Mengelola pemutaran sound effects (SFX) dengan fitur toggle on/off.

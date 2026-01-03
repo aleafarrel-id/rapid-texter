@@ -1,7 +1,7 @@
 /**
  * @file Terminal.h
  * @brief Cross-platform terminal manipulation wrapper
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * Menyediakan abstraksi untuk operasi terminal yang bekerja di Windows dan Linux.

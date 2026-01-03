@@ -1,7 +1,7 @@
 /**
  * @file SettingsManager.h
  * @brief Settings Manager untuk Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * Mengelola penyimpanan dan pemuatan pengaturan user dalam format JSON.

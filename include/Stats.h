@@ -1,7 +1,7 @@
 /**
  * @file Stats.h
  * @brief Struktur data untuk statistik gameplay
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * Menyimpan dan menghitung statistik permainan seperti WPM, accuracy,

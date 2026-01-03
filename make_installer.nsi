@@ -96,7 +96,7 @@ Section "Rapid Texter Core" Sec01
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RapidTexter" "DisplayName" "Rapid Texter"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RapidTexter" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RapidTexter" "DisplayIcon" "$INSTDIR\resources\app_icon.ico"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RapidTexter" "Publisher" "Alea Farrel"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RapidTexter" "Publisher" "Alea Farrel & Team"
 
 SectionEnd
 

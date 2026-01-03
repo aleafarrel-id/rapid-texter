@@ -1,7 +1,7 @@
 /**
  * @file TextProvider.h
  * @brief Provider untuk database kata-kata berdasarkan bahasa dan kesulitan
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * TextProvider mengelola loading dan filtering kata-kata dari file eksternal

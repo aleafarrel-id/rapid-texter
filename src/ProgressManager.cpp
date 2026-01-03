@@ -1,7 +1,7 @@
 /**
  * @file ProgressManager.cpp
  * @brief Implementasi ProgressManager untuk pengelolaan progress campaign
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * File ini mengimplementasikan class ProgressManager yang bertanggung jawab

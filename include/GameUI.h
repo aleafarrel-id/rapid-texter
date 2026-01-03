@@ -1,7 +1,7 @@
 /**
  * @file GameUI.h
  * @brief UI/UX Helper class untuk Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * Memisahkan semua fungsi rendering UI dari GameEngine untuk modularitas.

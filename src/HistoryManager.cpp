@@ -1,7 +1,7 @@
 /**
  * @file HistoryManager.cpp
  * @brief Implementasi HistoryManager untuk pengelolaan history permainan
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * File ini mengimplementasikan class HistoryManager yang bertanggung jawab

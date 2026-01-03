@@ -1,7 +1,7 @@
 /**
  * @file GameEngine.h
  * @brief Header file untuk Game Engine Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * Mendefinisikan class GameEngine yang mengelola State Machine aplikasi

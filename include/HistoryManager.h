@@ -1,7 +1,7 @@
 /**
  * @file HistoryManager.h
  * @brief Manager untuk menyimpan dan menampilkan history permainan
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * HistoryManager mengelola pencatatan history permainan user dalam format JSON.

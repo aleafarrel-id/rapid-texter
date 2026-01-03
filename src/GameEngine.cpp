@@ -1,7 +1,7 @@
 /**
  * @file GameEngine.cpp
  * @brief Implementasi logic utama aplikasi Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * File ini mengimplementasikan State Machine untuk mengelola alur aplikasi,

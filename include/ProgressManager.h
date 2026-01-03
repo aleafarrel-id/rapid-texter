@@ -1,7 +1,7 @@
 /**
  * @file ProgressManager.h
  * @brief Progress persistence system dengan tracking per-bahasa
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * Mengelola penyimpanan dan pembacaan progress campaign dari file JSON.

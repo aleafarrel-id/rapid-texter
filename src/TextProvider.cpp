@@ -1,7 +1,7 @@
 /**
  * @file TextProvider.cpp
  * @brief Implementasi TextProvider untuk pengelolaan database kata-kata
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * File ini mengimplementasikan class TextProvider yang bertanggung jawab

@@ -148,5 +148,5 @@ Project ini dilisensikan di bawah **MIT License**. Bebas untuk digunakan, dimodi
 
 ---
 <div align="center">
-  Developed 2025 by Alea Farrel.
+  Developed 2025 by Alea Farrel & Team.
 </div>

@@ -1,7 +1,7 @@
 /**
  * @file GameUI.cpp
  * @brief Implementasi UI/UX Helper untuk Rapid Texter
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  * 
  * File ini mengimplementasikan semua fungsi rendering UI.

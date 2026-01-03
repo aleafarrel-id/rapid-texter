@@ -1,7 +1,7 @@
 /**
  * @file SFXManager.cpp
  * @brief Implementasi Sound Effects Manager dengan Overlapping Audio Support
- * @author Alea Farrel
+ * @author Alea Farrel & Team
  * @date 2025
  *
  * OVERLAPPING AUDIO IMPLEMENTATION:

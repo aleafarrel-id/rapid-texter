@@ -32,11 +32,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"   // Language: English (US), CodePage: Unicode
         BEGIN
-            VALUE "CompanyName", "Alea Farrel\0"
+            VALUE "CompanyName", "Alea Farrel & Team\0"
             VALUE "FileDescription", "Rapid Texter - Terminal Typing Game\0"
             VALUE "FileVersion", "1.0.0.0\0"
             VALUE "InternalName", "RapidTexter\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 Alea Farrel. Licensed under MIT.\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 Alea Farrel & Team. Licensed under MIT.\0"
             VALUE "OriginalFilename", "RapidTexter.exe\0"
             VALUE "ProductName", "Rapid Texter\0"
             VALUE "ProductVersion", "1.0.0.0\0"
