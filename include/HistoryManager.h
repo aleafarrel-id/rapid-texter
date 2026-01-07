@@ -36,11 +36,12 @@ struct HistoryEntry {
     std::string language;     ///< Bahasa yang digunakan ("ID", "EN", "PROG")
     std::string mode;         ///< Mode permainan ("Manual", "Campaign")
     std::string timestamp;    ///< Waktu permainan (format: DD/MM/YYYY HH:MM:SS)
+    double timeElapsed;       ///< Waktu yang dihabiskan untuk sesi (detik)
     
     /**
      * @brief Constructor default
      */
-    HistoryEntry() : wpm(0), accuracy(0), targetWPM(0), errors(0) {}
+    HistoryEntry() : wpm(0), accuracy(0), targetWPM(0), errors(0), timeElapsed(0.0) {}
 };
 
 /**

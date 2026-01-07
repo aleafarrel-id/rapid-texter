@@ -301,7 +301,7 @@ void GameEngine::handleMenuHistory() {
       int cx = w / 2;
 
       // Box lebih besar untuk menampung data dengan rapi
-      int boxW = 90;
+      int boxW = 98;
       int boxH = 27;
       gameUI.drawBox(cx - boxW / 2, cy - boxH / 2, boxW, boxH, Color::YELLOW);
 
@@ -328,16 +328,16 @@ void GameEngine::handleMenuHistory() {
         // HEADER TABEL
         // ====================================================================
         int startY = cy - 5;
-        int startX = cx - 43; // Start dari kiri dengan padding
+        int startX = cx - 47; // Start dari kiri dengan padding
 
         terminal.setCursor(startX, startY);
         terminal.setColor(Color::CYAN);
 
         // Header dengan format yang konsisten dengan data
-        char headerLine[110];
+        char headerLine[120];
         snprintf(headerLine, sizeof(headerLine),
-                 "%-7s%-10s%-12s%-8s%-12s%-6s%-10s%s", "WPM", "Accuracy", "Target-WPM",
-                 "Errors", "Difficulty", "Lang", "Mode", "Date/Time");
+                 "%-7s%-10s%-8s%-12s%-8s%-12s%-6s%-10s%s", "WPM", "Accuracy", "Time",
+                 "Target-WPM", "Errors", "Difficulty", "Lang", "Mode", "Date/Time");
         terminal.print(headerLine);
 
         terminal.resetColor();
@@ -360,7 +360,7 @@ void GameEngine::handleMenuHistory() {
           terminal.setCursor(startX, rowY);
 
           // Format row dengan alignment yang sama dengan header
-          char rowLine[120];
+          char rowLine[130];
 
           // Prepare strings dengan padding yang benar
           char wpmStr[10];
@@ -368,6 +368,10 @@ void GameEngine::handleMenuHistory() {
 
           char accStr[12];
           snprintf(accStr, sizeof(accStr), "%.1f%%", entry.accuracy);
+
+          // Format time elapsed (in seconds)
+          char timeStr[10];
+          snprintf(timeStr, sizeof(timeStr), "%.1fs", entry.timeElapsed);
 
           // Truncate strings jika terlalu panjang
           std::string diffStr = entry.difficulty;
@@ -395,8 +399,8 @@ void GameEngine::handleMenuHistory() {
           }
 
           // Print dengan format yang konsisten
-          snprintf(rowLine, sizeof(rowLine), "%-7s%-10s%-12s%-8d%-12s%-6s%-10s%s",
-                   wpmStr, accStr, targetStr, entry.errors, diffStr.c_str(),
+          snprintf(rowLine, sizeof(rowLine), "%-7s%-10s%-8s%-12s%-8d%-12s%-6s%-10s%s",
+                   wpmStr, accStr, timeStr, targetStr, entry.errors, diffStr.c_str(),
                    langStr.c_str(), modeStr.c_str(), entry.timestamp.c_str());
           terminal.print(rowLine);
           terminal.resetColor();
@@ -1502,6 +1506,7 @@ void GameEngine::showResults() {
   entry.wpm = currentStats.wpm;
   entry.accuracy = currentStats.accuracy;
   entry.errors = currentStats.errors;
+  entry.timeElapsed = currentStats.timeTaken;
 
   // Format difficulty
   switch (currentDifficulty) {

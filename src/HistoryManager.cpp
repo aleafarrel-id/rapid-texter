@@ -443,6 +443,16 @@ bool HistoryManager::loadHistory() {
                 }
             }
         }
+        // Parse "timeElapsed" field (numeric double)
+        else if (line.find("\"timeElapsed\"") != std::string::npos) {
+            size_t colonPos = line.find(":");
+            if (colonPos != std::string::npos) {
+                std::string value = line.substr(colonPos + 1);
+                value.erase(0, value.find_first_not_of(" \t"));
+                if (!value.empty() && value.back() == ',') value.pop_back();
+                currentEntry.timeElapsed = std::atof(value.c_str());
+            }
+        }
     }
     
     file.close();
@@ -515,7 +525,8 @@ bool HistoryManager::saveHistory() {
         file << "      \"difficulty\": \"" << escapeJsonString(entry.difficulty) << "\",\n";
         file << "      \"language\": \"" << escapeJsonString(entry.language) << "\",\n";
         file << "      \"mode\": \"" << escapeJsonString(entry.mode) << "\",\n";
-        file << "      \"timestamp\": \"" << escapeJsonString(entry.timestamp) << "\"\n";
+        file << "      \"timestamp\": \"" << escapeJsonString(entry.timestamp) << "\",\n";
+        file << "      \"timeElapsed\": " << entry.timeElapsed << "\n";
         file << "    }" << (i < entries.size() - 1 ? "," : "") << "\n";
     }
     

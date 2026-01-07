@@ -19,3 +19,4 @@ appimagetool*
 *.AppImage
 build_linux/*
 AppDir/*
+/tmp/*
