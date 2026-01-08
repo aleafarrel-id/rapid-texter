@@ -25,6 +25,32 @@
 
 ---
 
+## 🖥️ Tersedia dalam Versi GUI
+
+<div align="center">
+
+**🎉 Rapid Texter kini juga tersedia dalam versi GUI!**
+
+[![GUI Version](https://img.shields.io/badge/GUI_Version-Qt%2FQML-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://github.com/aleafarrel-id/rapid-texter-gui)
+
+</div>
+
+Bagi Anda yang lebih menyukai antarmuka grafis, kami menyediakan **[Rapid Texter GUI](https://github.com/aleafarrel-id/rapid-texter-gui)** yang dibangun menggunakan **Qt/QML** dengan tampilan modern dan user-friendly.
+
+### 🔄 Sinkronisasi Data TUI & GUI
+
+Kedua versi aplikasi (TUI dan GUI) **sepenuhnya tersinkronisasi** untuk memaksimalkan pengalaman pengguna:
+
+| Data | Keterangan |
+|------|------------|
+| **📈 Progress** | Level dan pencapaian Anda tersimpan dan berlaku di kedua versi |
+| **📜 History** | Riwayat permainan dapat diakses baik dari TUI maupun GUI |
+| **⚙️ Personalisasi** | Pengaturan seperti durasi default, preferensi bahasa, dll tetap konsisten |
+
+> **💡 Tip:** Anda bisa bebas berganti antara TUI dan GUI kapan saja tanpa kehilangan data! Kedua aplikasi mengakses dan menggunakan file data yang sama, sehingga semua progress dan pengaturan Anda akan selalu tersinkronisasi.
+
+---
+
 ## 🎮 Cara Menggunakan Aplikasi
 
 ### 1. Jalankan Aplikasi
